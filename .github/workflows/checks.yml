@@ -1,0 +1,27 @@
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  static-checks:
+    name: Node.js ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Validate JavaScript and shell scripts
+        run: |
+          node --check listen.mjs
+          bash -n run.sh
+          if [ -f install.sh ]; then bash -n install.sh; fi
+      - name: Run configuration tests
+        run: node --test tests/*.test.mjs
