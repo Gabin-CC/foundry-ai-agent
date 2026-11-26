@@ -18,10 +18,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          cache: npm
+      - name: Install pinned dependencies
+        run: npm ci
       - name: Validate JavaScript and shell scripts
         run: |
           node --check listen.mjs
+          node --check scripts/smoke-test.mjs
           bash -n run.sh
+          bash -n scripts/smoke-test.sh
           if [ -f install.sh ]; then bash -n install.sh; fi
-      - name: Run configuration tests
-        run: node --test tests/*.test.mjs
+      - name: Verify installed Foundry client import
+        run: node --input-type=module -e 'import { loadFoundrySession } from "./lib/foundry-module.mjs"; await loadFoundrySession();'
+      - name: Run unit tests (no live Foundry needed)
+        run: npm test

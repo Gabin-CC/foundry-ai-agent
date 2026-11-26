@@ -25,6 +25,8 @@ constituent pas une restriction technique des permissions.
 - Détection automatique de la prise en charge des filtres temporels par
   Foundry : lectures incrémentales si le filtre fonctionne, sinon lectures
   complètes comme auparavant.
+- Test de connexion en lecture seule sur le vrai serveur Foundry, indépendant
+  des tests unitaires.
 - Transmission du rôle Foundry du joueur dans chaque demande.
 - Accès aux fonctions Foundry via MCP (lecture, jets, interactions).
 - Installation en anglais ou en français, avec réponses de l'assistant dans
@@ -32,7 +34,8 @@ constituent pas une restriction technique des permissions.
 
 ## Prérequis
 
-- Node.js **20 minimum** et npm.
+- Node.js **20 minimum**, npm et Git (le client Foundry est installé depuis
+  un commit GitHub figé, car il n'est pas publié sur npm).
 - [OpenCode](https://opencode.ai/docs/) installé et accessible dans le `PATH`.
 - Un serveur Foundry VTT avec un point d'accès MCP (par exemple,
   `foundry-vtt-mcp-server`).
@@ -58,14 +61,14 @@ L'installateur détecte la langue du système et permet de choisir entre
 ./install.sh --lang fr --non-interactive
 ```
 
-Il vérifie Node.js, installe les dépendances npm et crée `.env` à partir de
+Il vérifie Node.js, installe les dépendances npm depuis le fichier de verrouillage et crée `.env` à partir de
 `.env.example` si nécessaire. **Un `.env` existant n'est jamais écrasé.**
 L'option `--skip-deps` permet d'ignorer l'installation des dépendances.
 
 Pour une installation manuelle :
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 ```
 
@@ -76,8 +79,9 @@ Renseigne ensuite les valeurs de `.env` :
   dans la configuration d'exemple).
 - `FOUNDRY_MCP_URL` : adresse du serveur MCP.
 - `FOUNDRY_MCP_AUTH_B64` : identifiants MCP en Basic encodés en Base64.
-- `FOUNDRY_MCP_MODULE` : module npm exposant `FoundrySession`, ou chemin
-  absolu d'un module installé localement.
+- `FOUNDRY_MCP_MODULE` : `foundry-vtt-mcp-server/src/foundry.mjs` (fourni par
+  la dépendance GitHub figée), ou chemin absolu du module client local.
+  L'ancienne valeur contenant uniquement le nom du paquet reste compatible.
 
 Exemple de génération du mot de passe encodé :
 
@@ -110,6 +114,29 @@ Dans Foundry, adresse un chuchotement au compte `AI` :
 
 La réponse arrive en message privé.
 
+## Vérification avant publication
+
+Exécute les tests unitaires :
+
+```bash
+npm test
+```
+
+Une fois `.env` renseigné et Foundry démarré, vérifie la connexion réelle,
+**sans envoyer de message, démarrer OpenCode ou modifier la partie** :
+
+```bash
+npm run smoke:foundry
+```
+
+Ce test ouvre une session avec `AI_USER`, lit les listes `User` et
+`ChatMessage`, affiche uniquement leur taille puis referme la connexion.
+Il ne valide pas la clé du modèle, le serveur MCP HTTP ni le traitement
+complet des chuchotements. Pour ce dernier point, lance `./run.sh` et envoie
+un vrai whisper depuis Foundry ; vérifie la réponse HTML, la reprise de
+session par joueur et la conservation de `.state/` après redémarrage.
+Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
+
 ## Variables de configuration
 
 | Variable | Défaut | Fonction |
@@ -123,7 +150,7 @@ La réponse arrive en message privé.
 | `OPENROUTER_API_KEY` | requis avec OpenRouter | Clé API |
 | `FOUNDRY_MCP_URL` | `http://127.0.0.1:8808/mcp` | Adresse MCP |
 | `FOUNDRY_MCP_AUTH_B64` | valeur d'exemple | Authentification MCP |
-| `FOUNDRY_MCP_MODULE` | `foundry-vtt-mcp-server` | Module `FoundrySession` |
+| `FOUNDRY_MCP_MODULE` | `foundry-vtt-mcp-server/src/foundry.mjs` | Module `FoundrySession` |
 | `POLL_MS` | `3000` | Intervalle en millisecondes |
 | `MAX_REPLY` | `4000` | Taille maximale d'une réponse |
 | `RESET_MS` | `86400000` | Délai d'inactivité avant réinitialisation |
@@ -162,8 +189,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
   les deux minutes par défaut, et le mode complet est rétabli en cas d'erreur
   ou d'incohérence. Un message omis peut donc être récupéré avec un délai
   allant jusqu'à la prochaine relecture complète.
-- Les tests utilisent des interfaces Foundry et OpenCode simulées ; le
-  fonctionnement réel doit être vérifié avant déploiement.
+- Les tests unitaires simulent Foundry et OpenCode. Le test de connexion
+  en lecture seule vérifie la connexion réelle, mais le parcours complet
+  des chuchotements doit aussi être validé avant déploiement.
 
 En cas de comportement inattendu sur ta version de Foundry/MCP, renseigne
 `CHAT_FILTER_MODE=off` dans `.env` puis redémarre le pont. Cela rétablit les

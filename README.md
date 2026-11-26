@@ -27,6 +27,8 @@ whose access is appropriate for your group.
 - Automatically checks whether Foundry supports timestamp-filtered chat
   queries, uses smaller incremental reads when verified, and falls back to
   full reads when unsupported.
+- Includes a read-only connection smoke test for the real Foundry server,
+  separate from the unit tests.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
 - Offers an English/French interactive installer; the runtime can answer in
@@ -47,11 +49,13 @@ Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
 | `AGENTS.md` | Instructions for the in-game AI assistant |
 | `install.sh` | Interactive English/French installation |
 | `run.sh` | Load `.env` and start the bridge |
+| `scripts/smoke-test.sh` | Read-only Foundry connection check |
 | `foundry-ai-agent.service` | Example systemd service |
 
 ## Requirements
 
-- Node.js **20 or later** and npm.
+- Node.js **20 or later**, npm and Git (npm installs the pinned Foundry client
+  source directly from GitHub; it is not published as an npm package).
 - [OpenCode](https://opencode.ai/docs/) installed and accessible from `PATH`.
 - A running Foundry VTT server and a reachable Foundry MCP endpoint (for
   example, `foundry-vtt-mcp-server`).
@@ -77,14 +81,14 @@ The installer detects your system language and offers **English** or
 ./install.sh --lang fr --non-interactive
 ```
 
-It checks Node.js, installs npm dependencies, and creates `.env` from
+It checks Node.js, installs npm dependencies from the committed lockfile, and creates `.env` from
 `.env.example` if the file does not already exist. An existing `.env` is
 never overwritten. Use `--skip-deps` if dependencies are already installed.
 
 Alternatively, install manually:
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 ```
 
@@ -95,8 +99,9 @@ Then edit `.env` and configure at least:
   for your chosen provider).
 - `FOUNDRY_MCP_URL`: endpoint for the MCP server.
 - `FOUNDRY_MCP_AUTH_B64`: Base64 of the MCP account's `username:password`.
-- `FOUNDRY_MCP_MODULE`: npm module exporting `FoundrySession`, or an absolute
-  path to the local server module.
+- `FOUNDRY_MCP_MODULE`: `foundry-vtt-mcp-server/src/foundry.mjs` (installed
+  from a pinned GitHub commit), or an absolute path to the local client module.
+  The old package-only value is accepted for existing installations.
 
 For example, generate a Basic authentication value with:
 
@@ -130,6 +135,29 @@ In Foundry, whisper to your dedicated assistant account:
 
 The assistant replies in a private chat message.
 
+## Verification before release
+
+Run the unit suite after installation:
+
+```bash
+npm test
+```
+
+With `.env` configured and Foundry running, check the real Foundry login and
+read access **without posting any message, starting OpenCode, or modifying
+game data**:
+
+```bash
+npm run smoke:foundry
+```
+
+The smoke test logs in as `AI_USER`, reads `User` and `ChatMessage`, reports
+only the number of records, then closes the session. It does not test model
+authentication, the MCP endpoint, or the end-to-end whisper path. To verify
+those, start `./run.sh` and send an actual whisper from Foundry, then confirm
+an HTML reply, per-player session reuse and that existing `.state/` survives a
+restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
+
 ## Configuration
 
 | Variable | Default | Purpose |
@@ -143,7 +171,7 @@ The assistant replies in a private chat message.
 | `OPENROUTER_API_KEY` | required for OpenRouter | Provider API key |
 | `FOUNDRY_MCP_URL` | `http://127.0.0.1:8808/mcp` | MCP endpoint |
 | `FOUNDRY_MCP_AUTH_B64` | example value | MCP Basic authentication value |
-| `FOUNDRY_MCP_MODULE` | `foundry-vtt-mcp-server` | Module exporting `FoundrySession` |
+| `FOUNDRY_MCP_MODULE` | `foundry-vtt-mcp-server/src/foundry.mjs` | Module exporting `FoundrySession` |
 | `POLL_MS` | `3000` | Chat polling interval in milliseconds |
 | `MAX_REPLY` | `4000` | Maximum reply length |
 | `RESET_MS` | `86400000` | Inactivity timeout for a conversation |
@@ -185,8 +213,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
   unexpectedly. This prevents a permanently missed message if the MCP server
   does not support the optimization, although recovery of a missed message
   may be delayed until the next rescan.
-- Tests use mocked Foundry and OpenCode interfaces; live integration should
-  be verified before deployment.
+- Unit tests use mocked Foundry and OpenCode interfaces. The separate
+  read-only Foundry smoke test checks login and queries, but live whispers
+  must still be verified before deployment.
 
 If your Foundry/MCP version behaves unexpectedly, set `CHAT_FILTER_MODE=off`
 in `.env` and restart the bridge. This immediately restores the previous
