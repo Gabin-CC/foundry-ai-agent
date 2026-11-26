@@ -18,7 +18,8 @@ Re-run the command after adding, replacing or removing a PDF.
 - Local PDFs have no public web link. Citations are filename + PDF page number
   (which may differ from the book's printed page number).
 - Only **text-extractable, unencrypted PDFs** work. Scanned image-only PDFs
-  require OCR first. Each PDF must be no larger than 250 MB; maximum 30 PDFs.
+  require OCR first. There is no arbitrary PDF file-size cap; large illustrated
+  books can take longer and require more memory/disk space. Maximum 30 PDFs.
 - The index is stored locally, but **retrieved text excerpts are sent by
   OpenCode to your configured AI model provider** when answering questions.
   Only index files you are entitled and comfortable to use that way.

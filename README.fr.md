@@ -177,7 +177,9 @@ Puis relance `npm run rules:setup` et redémarre le pont. L'agent pourra
 interroger le SRD **et** les livres présents, avec une citation « nom du PDF,
 page PDF ». Tes livres et l'index restent **exclus de Git** : seul le mode
 d'emploi du dossier est public. Les fichiers doivent contenir du texte
-extractible (pas de simples scans sans OCR) et peser au maximum 250 Mo chacun.
+extractible (pas de simples scans sans OCR). Il n'y a pas de plafond de taille
+arbitraire par PDF, mais les gros livres peuvent demander plus de mémoire,
+d'espace disque et de temps d'indexation.
 L'agent ne peut pas certifier automatiquement qu'un PDF ajouté correspond
 réellement aux règles 2024 ; n'ajoute ni règles 2014 ni documents maison.
 
