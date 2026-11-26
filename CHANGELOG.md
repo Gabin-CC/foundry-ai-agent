@@ -5,22 +5,44 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
-- Interactive English/French installer now verifies OpenCode V2, optionally
-  installs the official npm package `@opencode/cli@^2`, and offers explicit
-  flags for unattended installation or deferred checks. V1 packages are never
-  removed silently.
+## [0.2.0] - Unreleased
 
-### Breaking: OpenCode V2 only
+### Breaking: OpenCode V2 required
 
-- Require OpenCode 2.x at startup; reject V1 and untested major versions
-  before logging into Foundry. Add a read-only V2 CLI prerequisite check.
-- Cleanly discard legacy V1 OpenCode session IDs without importing or
-  migrating V1 conversations. Preserve Foundry chat cursors and per-player
-  ordering; fresh V2 sessions persist across subsequent restarts.
-- Retry failed/incomplete OpenCode requests without consuming the chat
-  checkpoint, and reject error events or mismatched resumed session IDs.
-- Require V2 for the isolated live SRD evaluation before creating its output.
-- Document the V2-only breaking change in both supported README languages.
+- OpenCode **2.x only** (V1 and untested future majors are rejected before
+  Foundry login). The isolated live rules evaluator also requires V2.
+- **No V1 conversation migration**: the first V2 startup discards old OpenCode
+  session references and starts fresh sessions for players. Foundry chat
+  checkpoints and per-sender cursors are retained so processed whispers are
+  not replayed. New V2 sessions resume normally after later restarts.
+
+### D&D 2024 rule accuracy
+
+- Add read-only local MCP search for the official English **SRD 5.2.1**, with
+  verified source pages and links. Optional **private PDF rulebooks** can be
+  indexed locally without committing or distributing commercial material.
+  Remove the arbitrary 250 MB limit for private PDFs; extraction still has
+  resource/time limits.
+- Enforce source/page **citation provenance** against rules tools actually
+  consulted for each answer. Missing or invented citations receive a cautious
+  fallback; ordinary Foundry rolls remain unaffected. This is not semantic
+  proof of the model's interpretation.
+- Add a reproducible **13-case** offline D&D 2024 SRD benchmark with bilingual
+  questions, 2014/2024 pitfalls, and separate human review of correctness.
+- Add opt-in live-model collection in an isolated **SRD-only** OpenCode V2
+  workspace, excluding Foundry access and private rulebooks. No provider calls
+  occur during unit tests or a dry run.
+
+### Reliability and installation
+
+- Retry OpenCode failures/incomplete responses without advancing a player's
+  Foundry chat cursor; reject error events and unexpected resumed session IDs.
+- Add a read-only V2 CLI prerequisite check and improve the English/French
+  installer to detect V2, optionally install the official npm package
+  `@opencode/cli@^2`, and handle unattended installation explicitly. The
+  installer does not silently uninstall V1 or overwrite `.env`.
+- Document the breaking change, privacy boundaries and deployment checks in
+  English and French.
 
 ## [0.1.0] - 2026-11-26
 
