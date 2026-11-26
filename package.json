@@ -11,12 +11,13 @@
   "scripts": {
     "start": "node listen.mjs",
     "test": "node --test tests/*.test.mjs",
+    "check:release": "node scripts/check-release.mjs",
     "smoke:foundry": "bash scripts/smoke-test.sh"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
-    "foundry-vtt-mcp-server": "git+https://github.com/Gabin-CC/foundry-vtt-mcp-server.git#be3200e0ff5ced9024697711651991e0983a4280"
+    "foundry-vtt-mcp-server": "git+https://github.com/Gabin-CC/foundry-vtt-mcp-server.git#8bf867431537fcee35695a8e0f77cc625ca8c6b9"
   }
 }
