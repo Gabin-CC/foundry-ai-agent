@@ -4,6 +4,12 @@
   "instructions": ["AGENTS.md"],
   "mcp": {
     "servers": {
+      "rules": {
+        "type": "local",
+        "command": ["node", "rules-mcp.mjs"],
+        "cwd": ".",
+        "codemode": false
+      },
       "foundry": {
         "type": "remote",
         "url": "{env:FOUNDRY_MCP_URL}",

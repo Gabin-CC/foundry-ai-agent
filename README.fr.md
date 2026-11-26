@@ -29,6 +29,8 @@ constituent pas une restriction technique des permissions.
   des tests unitaires.
 - Transmission du rôle Foundry du joueur dans chaque demande.
 - Accès aux fonctions Foundry via MCP (lecture, jets, interactions).
+- Recherche locale en lecture seule dans le SRD officiel 5.2.1 **anglais**,
+  complétée si souhaité par des PDF privés, avec références aux pages exactes.
 - Installation en anglais ou en français, avec réponses de l'assistant dans
   la langue de l'interlocuteur (français par défaut).
 
@@ -43,6 +45,8 @@ constituent pas une restriction technique des permissions.
 - Une clé API pour un fournisseur de modèles compatible avec OpenCode.
 - Sous Linux, l'utilitaire `script` (util-linux), utilisé par le pont actuel
   pour créer un pseudo-terminal.
+- Pour les règles sourcées, `pdftotext` (paquet `poppler-utils`) et un accès
+  HTTPS ponctuel au SRD officiel, ou une copie locale du même PDF.
 
 ## Installation
 
@@ -134,6 +138,63 @@ Dans Foundry, adresse un chuchotement au compte `AI` :
 
 La réponse arrive en message privé.
 
+## Règles D&D 2024 avec sources vérifiables
+
+Le fichier `AGENTS.md` est configuré pour **D&D 2024, sans règles maison**.
+Pour chaque question de règles, l'IA doit rechercher le passage pertinent
+dans le **SRD 5.2.1 anglais**, grâce à son serveur MCP local, et citer la
+**page exacte du PDF officiel**. Elle peut chercher en anglais puis expliquer
+le résultat en français. Cet outil est en lecture seule et ne modifie
+jamais les données Foundry.
+
+Après `npm ci`, prépare une fois le corpus depuis le dossier du projet :
+
+```bash
+# Debian/Ubuntu : sudo apt install poppler-utils
+npm run rules:setup
+```
+
+Cette commande télécharge le PDF anglais officiel et crée l'index local
+`.rules/`, ignoré par Git. Il n'emploie **ni le SRD 5.1 ni les règles 2014**.
+Sans téléchargement, tu peux indiquer ton exemplaire du même PDF :
+`npm run rules:setup -- --en /chemin/vers/SRD_CC_v5.2.1.pdf`.
+Conserve `.rules/` pendant les déploiements ; le compte `foundry-agent`
+doit pouvoir le lire. Pour un service non-root, exécute idéalement la préparation
+avec ce compte, dans un dossier `.rules/` dont il est propriétaire.
+Si OpenCode tourne déjà, redémarre le pont après la préparation.
+
+### Ajouter ses propres livres PDF
+
+Si tu possèdes d'autres livres de règles officiels compatibles D&D 2024,
+dépose leurs PDF **directement dans `rules-private/`**, par exemple :
+
+```text
+rules-private/Players_Handbook_2024.pdf
+rules-private/Dungeon_Masters_Guide_2024.pdf
+```
+
+Puis relance `npm run rules:setup` et redémarre le pont. L'agent pourra
+interroger le SRD **et** les livres présents, avec une citation « nom du PDF,
+page PDF ». Tes livres et l'index restent **exclus de Git** : seul le mode
+d'emploi du dossier est public. Les fichiers doivent contenir du texte
+extractible (pas de simples scans sans OCR) et peser au maximum 250 Mo chacun.
+L'agent ne peut pas certifier automatiquement qu'un PDF ajouté correspond
+réellement aux règles 2024 ; n'ajoute ni règles 2014 ni documents maison.
+
+**Confidentialité importante :** les PDF restent sur le serveur, mais les
+**extraits retrouvés sont transmis par OpenCode à ton fournisseur IA** pour
+générer les réponses. Assure-toi d'avoir le droit et de souhaiter cet usage.
+
+**Limites :** le SRD ne contient **pas toutes** les règles des livres achetés.
+Le dépôt ne distribue aucun livre commercial. Si une réponse n'est pas
+vérifiable dans les sources disponibles, l'IA doit l'indiquer plutôt que
+l'inventer. Ses consignes ne garantissent pas à elles seules l'exactitude :
+vérifie une citation lors d'un arbitrage important.
+
+Attribution du SRD 5.2.1 (CC-BY-4.0) :
+
+> This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
 ## Vérification avant publication
 
 Exécute les tests unitaires :
@@ -194,6 +255,8 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Donne au compte Foundry uniquement les droits nécessaires à ton groupe.
 - Les consignes de rôle de `AGENTS.md` ne sont pas un contrôle des permissions
   au niveau des outils MCP.
+- Les citations de règles dépendent aussi du bon usage des outils par l'IA :
+  une preuve absente ou insuffisante ne permet pas d'affirmer une règle.
 - L'exemple systemd utilise un compte non privilégié. `.env`, `.state/` et
   le répertoire OpenCode doivent être accessibles à ce compte.
 - Au premier lancement, les messages déjà présents sont considérés comme

@@ -31,6 +31,9 @@ whose access is appropriate for your group.
   separate from the unit tests.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
+- Includes an optional local, read-only D&D 2024 rules MCP tool that retrieves
+  English SRD 5.2.1 passages with verifiable PDF page links, plus extra locally
+  supplied PDF rulebooks. The agent can explain those rules in French.
 - Offers an English/French interactive installer; the runtime can answer in
   the language of the player, with French as the default.
 
@@ -38,6 +41,7 @@ whose access is appropriate for your group.
 
 ```text
 Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
+                                    |-----> local SRD rules MCP
        ^                               |
        +--------- private HTML reply --+
 ```
@@ -46,6 +50,8 @@ Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
 | --- | --- |
 | `listen.mjs` | Foundry chat polling, per-sender sessions, OpenCode bridge |
 | `opencode.json` | Model and remote Foundry MCP configuration |
+| `rules-mcp.mjs` | Local read-only SRD 5.2.1 search and page lookup |
+| `rules-private/` | Optional private rulebook PDFs (ignored by Git) |
 | `AGENTS.md` | Instructions for the in-game AI assistant |
 | `install.sh` | Interactive English/French installation |
 | `run.sh` | Load `.env` and start the bridge |
@@ -63,6 +69,8 @@ Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
 - An API key for an OpenCode-compatible model provider, such as OpenRouter.
 - On Linux, `script` from util-linux is used by the current bridge to run
   OpenCode inside a pseudo-terminal.
+- For rules lookup: Poppler `pdftotext`, plus outbound HTTPS access to download
+  the official English SRD once (or a local copy of that same PDF).
 
 ## Installation
 
@@ -155,6 +163,71 @@ In Foundry, whisper to your dedicated assistant account:
 
 The assistant replies in a private chat message.
 
+## Grounded D&D 2024 rules (optional setup)
+
+The example `AGENTS.md` is configured for **D&D 2024, no house rules**. It
+instructs OpenCode to search the **English SRD 5.2.1** through its local MCP
+server for every rules question, and to cite the actual official PDF page.
+Players can ask in French; the assistant searches English terms and explains
+the sourced rule in French. The rules server cannot change Foundry data.
+
+Run this once after `npm ci`, from the project directory:
+
+```bash
+# Debian/Ubuntu: sudo apt install poppler-utils
+npm run rules:setup
+```
+
+This downloads the **official English SRD 5.2.1** PDF and creates a searchable
+index under `.rules/`. It does not download or use SRD 5.1 or the 2014 rules.
+To build without a download, use `npm run rules:setup -- --en /path/to/SRD_CC_v5.2.1.pdf`.
+Both the PDF and the generated index are ignored by Git. Keep the `.rules/`
+directory on deploy and ensure that the service account can **read** it.
+If you run as `foundry-agent` under systemd, create the directory as that user
+and run the setup command with that account (or arrange equivalent ownership).
+Restart OpenCode/bridge after setup if it was already running.
+
+### Add your own PDF rulebooks
+
+If you already own additional compatible official D&D 2024 rulebooks, put
+their readable PDF files directly in **`rules-private/`** (e.g.
+`rules-private/Players_Handbook_2024.pdf`) and re-run:
+
+```bash
+npm run rules:setup
+```
+
+This extends the same local index with the contents of those books. The local
+rules MCP server can list all sources, search them, and return the exact PDF
+page. Official SRD results include a clickable D&D Beyond PDF URL; private
+books are cited by **filename and PDF page** (without a fabricated web link).
+Only the instruction file in `rules-private/` is committed; PDFs and their
+indexed text are excluded from Git. The tool cannot independently verify
+whether a user-provided PDF is an official 2024 book, so add only sources
+appropriate to your game. See [private-rulebook instructions](rules-private/README.md)
+for limits and details. Re-index after adding, changing or removing books.
+
+**Privacy:** the books and index stay on the machine, but **relevant excerpts
+from them are sent to the configured AI model provider by OpenCode** when the
+assistant consults them. Do not add books whose license or your privacy
+requirements prohibit that use.
+
+The assistant can cite, for example, *SRD 5.2.1 (EN), PDF p. 15* with an
+official PDF link, or *Players_Handbook_2024.pdf, PDF p. 87*. **This is not a
+guarantee against model mistakes**:
+`AGENTS.md` is a behavioral instruction, not a tool-enforced citation gate.
+Check that the cited page actually supports any consequential ruling.
+If the local index is missing or no supporting rule is found, the assistant is
+instructed to disclose that it cannot verify the ruling, rather than guess.
+
+**Scope:** SRD 5.2.1 contains only part of the 2024 rules. The project does
+not ship or download any commercial books. Additional books are used **only
+when an operator explicitly places their PDFs in the local private folder**.
+
+Attribution required for the source material:
+
+> This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
+
 ## Verification before release
 
 Run the unit suite after installation:
@@ -215,6 +288,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Use a dedicated Foundry account with only the access your group needs.
 - The assistant's role-aware rules currently rely on the model following
   `AGENTS.md`; the bridge does not enforce tool-level authorization.
+- Rule grounding also relies on model tool use and faithful citation. Missing
+  or insufficient SRD evidence must be treated as unverified, even when the
+  model sounds confident.
 - The service example uses a dedicated, unprivileged system user. Its `.env`,
   `.state/`, and OpenCode home must be accessible to that account.
 - On the first start, existing chat messages are treated as history. After

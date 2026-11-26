@@ -18,6 +18,14 @@ test("Foundry MCP uses the documented remote-server layout", () => {
   assert.equal(foundry.headers.Authorization, "Basic {env:FOUNDRY_MCP_AUTH_B64}");
 });
 
+test("the rules MCP server is a local, read-only source separate from Foundry", () => {
+  const rules = config.mcp.servers.rules;
+  assert.equal(rules.type, "local");
+  assert.deepEqual(rules.command, ["node", "rules-mcp.mjs"]);
+  assert.equal(rules.cwd, ".");
+  assert.equal(rules.codemode, false);
+});
+
 test("MCP credentials and model configuration reference documented environment variables", () => {
   for (const name of ["OPENCODE_MODEL", "FOUNDRY_MCP_URL", "FOUNDRY_MCP_AUTH_B64"]) {
     assert.match(envExample, new RegExp(`^${name}=`, "m"));
