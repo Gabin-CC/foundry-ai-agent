@@ -4,9 +4,13 @@
 // après inactivité ou nombre de messages.
 //
 // Voir README.md pour la configuration (tout se pilote par variables d'env).
-import { FoundrySession } from "@foundry-vtt-mcp/server";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+
+// Chemin du module exposant FoundrySession. Par défaut le paquet npm
+// "foundry-vtt-mcp-server" ; sur le LXC on pointe le fichier local via
+// FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs.
+const { FoundrySession } = await import(process.env.FOUNDRY_MCP_MODULE || "foundry-vtt-mcp-server");
 
 const env = process.env;
 

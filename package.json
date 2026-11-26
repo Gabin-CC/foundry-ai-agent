@@ -15,6 +15,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@foundry-vtt-mcp/server": "*"
+    "foundry-vtt-mcp-server": "*"
   }
 }
