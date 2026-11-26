@@ -14,6 +14,7 @@
     "rules:setup": "node scripts/prepare-rules.mjs",
     "eval:rules": "node scripts/evaluate-rules.mjs",
     "eval:rules:live": "node scripts/evaluate-rules-live.mjs",
+    "check:opencode:v2": "node scripts/check-opencode-v2.mjs",
     "check:release": "node scripts/check-release.mjs",
     "smoke:foundry": "bash scripts/smoke-test.sh"
   },

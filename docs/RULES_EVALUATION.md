@@ -77,6 +77,11 @@ npm run eval:rules -- --responses .rules/model-all.jsonl --json
 
 The live runner:
 
+0. Verifies the **OpenCode V2.x** CLI before writing output. OpenCode V1.x
+   cannot run the isolated `permissions` / `policies` configuration. This is
+   a deliberate breaking change, without V1 session migration. For setup,
+   see [OpenCode V2 only](OPENCODE_V2.md).
+
 1. Makes a fresh **temporary work directory** and copies only the official
    English SRD pages from the local index. It never passes the private
    PDF list, text or production configuration to OpenCode.

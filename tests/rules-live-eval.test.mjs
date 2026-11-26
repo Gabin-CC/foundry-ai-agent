@@ -107,6 +107,7 @@ test("mock OpenCode subprocess records real-format evidence without receiving Fo
   const mock = join(directory, "fake-opencode.mjs");
   // This is a fake executable: no API call and no actual OpenCode installation.
   await writeFile(mock, `#!${process.execPath}\nimport fs from "node:fs";
+if (process.argv[2] === "--version") { console.log("opencode 2.4.2"); process.exit(0); }
 const config = JSON.parse(fs.readFileSync("opencode.json", "utf8"));
 const index = JSON.parse(fs.readFileSync(config.mcp.servers.rules.environment.RULES_INDEX_PATH, "utf8"));
 if (process.env.FOUNDRY_MCP_URL || process.env.AI_PASSWORD || process.env.ADMIN_PASSWORD ||
@@ -159,4 +160,29 @@ test("CLI dry-run does not need provider credentials, corpus download, or an Ope
   assert.deepEqual(result.mcpServers, ["rules"]);
   assert.deepEqual(result.cases, ["unsourced-vecna-ritual"]);
   assert.equal(result.foundry, "unavailable");
+});
+
+test("live evaluation rejects OpenCode V1 before creating an output file", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "v1-opencode-eval-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const binary = join(directory, "old-opencode.mjs");
+  await writeFile(binary, `#!${process.execPath}\nconsole.log("opencode 1.19.6");`, { mode: 0o700 });
+  await chmod(binary, 0o700);
+  const corpus = join(directory, "index.json");
+  const output = join(directory, "never-created.jsonl");
+  await writeFile(corpus, JSON.stringify(index));
+  let stderr;
+  try {
+    execFileSync(process.execPath, ["scripts/evaluate-rules-live.mjs", "--execute",
+      "--model", model, "--case", "opportunity-attack-reaction", "--binary", binary,
+      "--index", corpus, "--output", output], {
+      cwd: project, encoding: "utf8", env: { ...process.env, OPENROUTER_API_KEY: "test-only-key" },
+      stdio: "pipe"
+    });
+    assert.fail("V1 must be rejected");
+  } catch (error) {
+    stderr = error.stderr;
+  }
+  assert.match(stderr, /requires OpenCode V2\.x/);
+  await assert.rejects(readFile(output, "utf8"), error => error.code === "ENOENT");
 });

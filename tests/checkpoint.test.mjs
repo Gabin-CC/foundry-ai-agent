@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { rm } from "node:fs/promises";
 import {
   advanceSenderState, advanceState, bootstrapState, cursorForSender,
-  emptyState, isUnprocessed, isUnprocessedForSender, loadState,
+  discardV1Sessions, emptyState, isUnprocessed, isUnprocessedForSender, loadState,
   messageTimestamp, orderedMessages, saveState
 } from "../lib/checkpoint.mjs";
 
@@ -44,6 +44,18 @@ test("independent sender cursors do not advance one another", () => {
   assert.equal(cursorForSender(both, "alice").lastTimestamp, 20);
   assert.equal(cursorForSender(both, "bob").lastTimestamp, 15);
   assert.equal(isUnprocessedForSender(both, "alice", message("a", 20)), false);
+});
+
+test("V1 session discarding does not touch chat progress or an already V2 state", () => {
+  const old = { version: 1, lastTimestamp: 32, seenAtTimestamp: ["id"],
+    senderCursors: { a: { lastTimestamp: 33, seenAtTimestamp: ["other"] } },
+    threads: { a: { id: "ses_v1", count: 1, last: 33 } } };
+  const next = discardV1Sessions(old);
+  assert.deepEqual(next.threads, {});
+  assert.equal(next.opencodeSessionFormat, "v2");
+  assert.equal(next.senderCursors, old.senderCursors);
+  assert.equal(next.seenAtTimestamp, old.seenAtTimestamp);
+  assert.equal(discardV1Sessions(next), next);
 });
 
 test("state is stored atomically and can be loaded after restart", async () => {

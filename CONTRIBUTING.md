@@ -14,8 +14,9 @@ available in **English and French**.
    motivation, observable behavior, and any deployment implications.
 3. Do not push directly to `main` for normal development. Use a topic branch,
    open a pull request, and obtain review before merging.
-4. Preserve compatibility where practical. When configuration or startup
-   behavior changes, document the migration in the PR and README files.
+4. Make breaking changes explicit in the PR, changelog and both README files.
+   **OpenCode V2 is mandatory**; do not reintroduce V1 fallbacks or V1 session
+   migration. Check [the V2 deployment contract](docs/OPENCODE_V2.md).
 5. Never commit credentials, chat transcripts, campaign data, `.env`, or
    other private Foundry information. Use fictional values in examples.
 6. Keep both README languages aligned when changing installation steps.
@@ -45,6 +46,11 @@ bash -n install.sh run.sh
 npm test
 npm run check:release
 ```
+
+On a host with OpenCode V2 installed, also run
+`npm run check:opencode:v2`. This only checks the installed CLI version,
+not model/provider behavior. `npm test` uses synthetic OpenCode V2 events
+and does not require a live OpenCode binary.
 
 The GitHub Actions workflow installs the pinned dependencies and runs static
 checks and Node.js tests. If you have a live Foundry instance, stop the bridge

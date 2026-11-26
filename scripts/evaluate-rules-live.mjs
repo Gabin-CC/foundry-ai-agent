@@ -5,6 +5,7 @@ import { open, readFile } from "node:fs/promises";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateRuleSuite } from "../lib/rules-eval.mjs";
+import { checkOpencodeVersion } from "../lib/opencode-cli.mjs";
 import { loadRules } from "../lib/rules.mjs";
 import { createIsolatedRulesWorkspace, isolatedProcessEnv,
   runIsolatedQuestion, validateOpenRouterModel } from "../lib/rules-live-eval.mjs";
@@ -85,6 +86,8 @@ async function main(argv) {
     }
     const env = isolatedProcessEnv({ root: isolated.root,
       providerKey: process.env.OPENROUTER_API_KEY });
+    // Abort with an actionable V2-only error before creating a result file.
+    await checkOpencodeVersion(options.binary, { env });
     const output = resolve(options.output);
     if (output.startsWith(project + sep) && !output.startsWith(join(project, ".rules") + sep)) {
       throw new Error("Write benchmark responses under .rules/ (gitignored) or outside the repository");

@@ -27,3 +27,24 @@ test("a rules MCP tool returning isError is not counted as supporting evidence",
       output: '{"isError":true,"content":[]}' } } });
   assert.equal(parseOpencodeEvents(raw).ruleCalls[0].isError, true);
 });
+
+test("OpenCode V2 errors and incorrect resumed sessions never produce a successful result", () => {
+  assert.throws(() => parseOpencodeEvents(JSON.stringify({ type: "error", sessionID: "ses_new",
+    error: { name: "ProviderError" } })), /error event/);
+  assert.throws(() => parseOpencodeEvents(JSON.stringify({ type: "text", sessionID: "ses_other",
+    part: { text: "Wrong session" } }), "ses_expected"), /different V2 session/);
+});
+
+test("OpenCode V2 step/tool/text JSON stream keeps the resumed session ID", () => {
+  const raw = [
+    { type: "step_start", sessionID: "ses_v2", part: { type: "step-start" } },
+    { type: "tool_use", sessionID: "ses_v2", part: { type: "tool", tool: "rules_search_rules",
+      state: { status: "completed", input: { query: "grapple" }, output: "Found" } } },
+    { type: "text", sessionID: "ses_v2", part: { type: "text", text: "<p>Cited answer</p>" } },
+    { type: "step_finish", sessionID: "ses_v2", part: { type: "step-finish", reason: "stop" } }
+  ].map(event => JSON.stringify(event)).join("\n");
+  const result = parseOpencodeEvents(raw, "ses_v2");
+  assert.equal(result.sessionID, "ses_v2");
+  assert.equal(result.text, "<p>Cited answer</p>");
+  assert.equal(result.ruleCalls[0].input.query, "grapple");
+});

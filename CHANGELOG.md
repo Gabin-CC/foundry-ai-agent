@@ -5,6 +5,18 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
+### Breaking: OpenCode V2 only
+
+- Require OpenCode 2.x at startup; reject V1 and untested major versions
+  before logging into Foundry. Add a read-only V2 CLI prerequisite check.
+- Cleanly discard legacy V1 OpenCode session IDs without importing or
+  migrating V1 conversations. Preserve Foundry chat cursors and per-player
+  ordering; fresh V2 sessions persist across subsequent restarts.
+- Retry failed/incomplete OpenCode requests without consuming the chat
+  checkpoint, and reject error events or mismatched resumed session IDs.
+- Require V2 for the isolated live SRD evaluation before creating its output.
+- Document the V2-only breaking change in both supported README languages.
+
 ## [0.1.0] - 2026-11-26
 
 - English project documentation and French translation, bilingual installer,

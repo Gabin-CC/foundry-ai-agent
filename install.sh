@@ -67,10 +67,10 @@ message() {
     fr:env_created) printf 'Fichier .env créé depuis .env.example (accès réservé au propriétaire).\n' ;;
     en:env_kept) printf 'Existing .env preserved.\n' ;;
     fr:env_kept) printf 'Fichier .env existant conservé.\n' ;;
-    en:done) printf 'Next: edit .env with your credentials, install OpenCode, then run ./run.sh.\n' ;;
-    fr:done) printf 'Suite : renseigne tes identifiants dans .env, installe OpenCode, puis lance ./run.sh.\n' ;;
-    en:warning) printf 'Warning: OpenCode is not on PATH; install it before starting the agent.\n' ;;
-    fr:warning) printf 'Attention : OpenCode est absent du PATH ; installe-le avant de lancer l’agent.\n' ;;
+    en:done) printf 'Next: edit .env, install OpenCode V2, run npm run check:opencode:v2, then ./run.sh.\n' ;;
+    fr:done) printf 'Suite : renseigne .env, installe OpenCode V2, lance npm run check:opencode:v2, puis ./run.sh.\n' ;;
+    en:warning) printf 'Warning: OpenCode V2 is required and is not on PATH. Install it before starting the agent.\n' ;;
+    fr:warning) printf 'Attention : OpenCode V2 est obligatoire et absent du PATH. Installe-le avant de lancer l’agent.\n' ;;
   esac
 }
 
