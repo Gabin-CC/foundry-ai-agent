@@ -3,10 +3,10 @@ import { test } from "node:test";
 import { isSensitiveTrackedPath, validateRelease } from "../lib/release-check.mjs";
 
 const valid = {
-  version: "0.1.0",
-  lockVersion: "0.1.0",
-  changelog: "# Changelog\n\n## [0.1.0] - Release candidate\n",
-  notes: "# Foundry AI Agent v0.1.0 — release candidate\n",
+  version: "0.2.0",
+  lockVersion: "0.2.0",
+  changelog: "# Changelog\n\n## [0.2.0] - Unreleased\n",
+  notes: "# Foundry AI Agent v0.2.0\n",
   trackedPaths: [".env.example", "README.md", "lib/bridge.mjs"]
 };
 
@@ -15,7 +15,7 @@ test("release metadata and safe tracked files pass", () => {
 });
 
 test("version mismatch or missing release notes is caught", () => {
-  assert.match(validateRelease({ ...valid, lockVersion: "0.2.0" })[0], /versions disagree/);
+  assert.match(validateRelease({ ...valid, lockVersion: "0.1.0" })[0], /versions disagree/);
   assert.match(validateRelease({ ...valid, notes: "# Wrong release\n" })[0], /notes title/);
   assert.match(validateRelease({ ...valid, changelog: "# Changelog\n" })[0], /missing version/);
 });

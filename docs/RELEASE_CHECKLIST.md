@@ -62,10 +62,16 @@ server have different responsibilities; verify both on a real installation.
       private campaign data with an appropriate secret scanner; the automated
       tracked-path check alone is not sufficient.
 - [ ] Record changes in CHANGELOG.md, choose a version and tag it explicitly.
-- [ ] Review [v0.1.0 release notes](RELEASE_NOTES_v0.1.0.md), including known
+- [ ] For v0.2.0, review the [prepared release notes](RELEASE_NOTES_v0.2.0.md),
+      including the OpenCode V2-only breaking change, V1 session reset,
       limitations and upgrade advice.
-- [ ] Only after the live checks, decide when to make the repository public
-      and publish a GitHub release. Neither step is automatic.
+- [ ] Before tagging, replace `Unreleased` in the **target changelog version**
+      with its actual publication date, remove any draft/pre-publication
+      wording from the target release notes and commit both changes.
+- [ ] Confirm the `v0.2.0` tag does not already exist; create it only on the
+      final verified release commit, not an older branch head.
+- [ ] Only after the live checks, publish the GitHub release. The repository
+      is already public; preparation alone does not create a tag or release.
 
 ## Production rollback
 
