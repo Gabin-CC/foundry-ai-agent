@@ -1,6 +1,7 @@
 // Local stdio MCP server. Never writes to Foundry; reads the pinned official
 // English SRD 5.2.1 and optional user-supplied local rule PDFs.
 import { join } from "node:path";
+import { performance } from "node:perf_hooks";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
@@ -10,7 +11,13 @@ import { loadAccessPolicy, parseRulesAccessRole, visibleRulesIndex } from "./lib
 const indexPath = process.env.RULES_INDEX_PATH || join(process.cwd(), ".rules", "srd-5.2.1.json");
 const accessPath = process.env.RULES_ACCESS_FILE || join(process.cwd(), "rules-private", "access.json");
 const role = parseRulesAccessRole(process.env.RULES_ACCESS_ROLE);
+const PAGE_WINDOW_CHARS = 6000;
+const metricsEnabled = process.env.RULES_SEARCH_METRICS === "1";
+const reportMetrics = (operation, started, resultCount, characters) => {
+  if (metricsEnabled) console.error(`[rules-mcp] ${operation} ${Math.round(performance.now() - started)}ms, ${resultCount} results, ${characters} chars`);
+};
 let cache;
+let visibleCache;
 
 async function index() {
   // Only cache successful reads: a missing index can be created while the
@@ -19,10 +26,17 @@ async function index() {
   return cache;
 }
 
-async function permittedIndex() {
-  // Re-read the policy so an operator can fix a missing/misclassified book
-  // without exposing every indexed PDF or rebuilding the search corpus.
-  return visibleRulesIndex(await index(), await loadAccessPolicy(accessPath), role);
+async function permittedCorpus() {
+  // Check only the small local policy on every call. Reuse the same filtered
+  // view and its compiled search dictionary until the classification changes.
+  const policy = await loadAccessPolicy(accessPath);
+  const revision = JSON.stringify([...policy.rules_for_all].sort());
+  if (!visibleCache || visibleCache.revision !== revision) {
+    visibleCache = { revision,
+      index: visibleRulesIndex(await index(), policy, role),
+      preferredSources: ["srd", ...policy.rules_for_all] };
+  }
+  return visibleCache;
 }
 
 const server = new McpServer({ name: "dnd-2024-rules", version: "0.1.0" });
@@ -36,7 +50,8 @@ server.registerTool("list_rule_sources", {
   inputSchema: {},
   annotations: { readOnlyHint: true, openWorldHint: false }
 }, async () => {
-  try { return { content: [{ type: "text", text: JSON.stringify(listRuleSources(await permittedIndex())) }] }; }
+  try { const corpus = await permittedCorpus();
+    return { content: [{ type: "text", text: JSON.stringify(listRuleSources(corpus.index)) }] }; }
   catch (error) { return errorResult(error); }
 });
 
@@ -50,22 +65,36 @@ server.registerTool("search_rules", {
   annotations: { readOnlyHint: true, openWorldHint: false }
 }, async ({ query, source, limit }) => {
   try {
-    const matches = searchRules(await permittedIndex(), query, { source, limit });
-    return { content: [{ type: "text", text: matches.length
+    const started = performance.now();
+    const corpus = await permittedCorpus();
+    const matches = searchRules(corpus.index, query, { source, limit,
+      preferredSources: corpus.preferredSources });
+    const output = matches.length
       ? JSON.stringify(matches)
-      : "No matching passage in the indexed sources. This does NOT mean the rule does not exist; do not invent an answer or citation." }] };
+      : "No matching passage in the indexed sources. This does NOT mean the rule does not exist; do not invent an answer or citation.";
+    reportMetrics("search", started, matches.length, output.length);
+    return { content: [{ type: "text", text: output }] };
   } catch (error) { return errorResult(error); }
 });
 
 server.registerTool("read_rule_page", {
-  description: "Read the exact page from a source returned by search_rules; specify the source_id from the result. User PDFs have no public web URL; cite filename and PDF page.",
-  inputSchema: { page: z.number().int().min(1), source: z.string().default("srd") },
+  description: "Read an exact PDF page in bounded 6000-character windows. Specify source_id from search_rules; if next_offset is present, call again with offset to continue. User PDFs have no public web URL; cite filename and PDF page.",
+  inputSchema: { page: z.number().int().min(1), source: z.string().default("srd"),
+    offset: z.number().int().min(0).default(0) },
   annotations: { readOnlyHint: true, openWorldHint: false }
-}, async ({ page, source }) => {
+}, async ({ page, source, offset }) => {
   try {
-    const result = readRulePage(await permittedIndex(), page, source);
-    return { content: [{ type: "text", text: result ? JSON.stringify(result)
-      : "Page unavailable for that source in the rules index; do not cite it." }] };
+    const started = performance.now();
+    const result = readRulePage((await permittedCorpus()).index, page, source);
+    const end = result ? Math.min(result.text.length, offset + PAGE_WINDOW_CHARS) : 0;
+    const visible = result && offset < result.text.length
+      ? { ...result, text: result.text.slice(offset, end),
+        total_characters: result.text.length,
+        next_offset: end < result.text.length ? end : null } : null;
+    const output = visible ? JSON.stringify(visible)
+      : "Page unavailable for that source in the rules index; do not cite it.";
+    reportMetrics("read-page", started, visible ? 1 : 0, output.length);
+    return { content: [{ type: "text", text: output }] };
   } catch (error) { return errorResult(error); }
 });
 

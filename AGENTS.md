@@ -14,8 +14,11 @@ MCP tools connected through a dedicated **Assistant GM** account.
   questions into English *search terms*; try alternate English terms as needed.
   Answer in the player's language without changing the rule.
   When a passage seems relevant, call `rules_read_rule_page` if more context
-  is required. Use Foundry tools for facts about an actual character, spell,
-  item or condition in the world; never confuse Foundry data with a rule source.
+  is required. Long pages arrive in bounded windows: follow `next_offset`
+  only if you need the continuation, and never assume you read the entire
+  page when more text remains. Use Foundry tools for facts about an actual
+  character, spell, item or condition in the world; never confuse Foundry
+  data with a rule source.
 - Only state a rule as verified when the retrieved source **actually supports
   the specific claim**. Cite the **PDF page number** and source: for the SRD,
   link the *actual* official URL returned by the tool, e.g.

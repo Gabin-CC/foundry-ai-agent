@@ -9,6 +9,10 @@ Then run `npm run rules:setup` from the project root and restart the bridge.
 The local `rules` MCP tools can search both the official SRD 5.2.1 and these
 PDFs, and can report the source **filename and actual PDF page number**.
 Re-run the command after adding, replacing or removing a PDF.
+For an existing large index, `npm run rules:optimize` builds a faster private
+search lookup without re-extracting any PDF. Both the original index and the
+new `.rules/search-v1.json` remain ignored by Git. Restart the bridge after
+either command.
 
 ## Two categories: rules for everyone / GM content
 

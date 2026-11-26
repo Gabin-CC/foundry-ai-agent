@@ -66,6 +66,8 @@ test("private citations require a retrieved matching filename and exact PDF page
   assert.equal(validateRulesReply({ question, reply: reply.replace("87", "88"),
     toolCalls: [privateCall], index }).ok, false);
   assert.deepEqual([...collectedEvidence(index, [privateCall])], [`${book}\u000087`]);
+  const beyondPage = { ...privateCall, input: { ...privateCall.input, offset: 99999 } };
+  assert.deepEqual([...collectedEvidence(index, [beyondPage])], []);
 });
 
 test("an honest lack-of-source response is allowed; an uncited rule claim is not", () => {
