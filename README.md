@@ -143,7 +143,8 @@ Run the unit suite after installation:
 npm test
 ```
 
-With `.env` configured and Foundry running, check the real Foundry login and
+With `.env` configured and Foundry running, **stop the bridge service first**
+so the smoke test does not compete for the same assistant login. Check the real Foundry login and
 read access **without posting any message, starting OpenCode, or modifying
 game data**:
 

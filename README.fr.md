@@ -122,7 +122,8 @@ Exécute les tests unitaires :
 npm test
 ```
 
-Une fois `.env` renseigné et Foundry démarré, vérifie la connexion réelle,
+Une fois `.env` renseigné et Foundry démarré, **arrête d'abord le service de
+l'agent** pour éviter deux connexions du même compte. Vérifie la connexion réelle,
 **sans envoyer de message, démarrer OpenCode ou modifier la partie** :
 
 ```bash

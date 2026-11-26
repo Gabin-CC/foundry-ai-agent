@@ -13,7 +13,8 @@ server have different responsibilities; verify both on a real installation.
       is never overwritten.
 - [ ] Fill in Foundry credentials, model settings and MCP endpoint details.
 - [ ] Run `npm test` (all unit tests pass).
-- [ ] Run `npm run smoke:foundry` with Foundry running. It must connect and
+- [ ] Stop the bridge service so it does not compete for the assistant login.
+      Run `npm run smoke:foundry` with Foundry running. It must connect and
       read users and chat history without posting anything.
 - [ ] Confirm that the OpenCode executable and Linux `script` utility exist.
 
