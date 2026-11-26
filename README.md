@@ -215,12 +215,19 @@ assistant consults them. Do not add books whose license or your privacy
 requirements prohibit that use.
 
 The assistant can cite, for example, *SRD 5.2.1 (EN), PDF p. 15* with an
-official PDF link, or *Players_Handbook_2024.pdf, PDF p. 87*. **This is not a
-guarantee against model mistakes**:
-`AGENTS.md` is a behavioral instruction, not a tool-enforced citation gate.
-Check that the cited page actually supports any consequential ruling.
-If the local index is missing or no supporting rule is found, the assistant is
-instructed to disclose that it cannot verify the ruling, rather than guess.
+official PDF link, or *Players_Handbook_2024.pdf, PDF p. 87*. The bridge now
+**checks the cited source and PDF page against successful rules MCP lookups
+performed for that specific reply**, then validates that the page exists in
+the local index. An explicit rules question answered without a citation, or
+one with an unverified citation, receives a cautious fallback whisper instead.
+If the index is missing, explicit rules questions also fail closed; ordinary
+gameplay requests and rolls continue to work.
+
+This is a **citation provenance check**, not a proof that the model interpreted
+the passage correctly. Rule-question detection uses deliberately conservative
+wording patterns and cannot catch every implicit rules discussion. Review
+important rulings against the cited page. To temporarily restore the earlier
+prompt-only behavior, set `RULES_CITATION_MODE=off` in `.env` and restart.
 
 **Scope:** SRD 5.2.1 contains only part of the 2024 rules. The project does
 not ship or download any commercial books. Additional books are used **only
@@ -277,6 +284,8 @@ restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
 | `CHAT_RESYNC_MS` | `120000` | Full chat rescan interval, in milliseconds |
 | `CHAT_LOOKBACK_MS` | `120000` | Overlap for incremental chat queries, in milliseconds |
 | `STATE_FILE` | `.state/bridge-state.json` | Local durable checkpoint file |
+| `RULES_CITATION_MODE` | `enforce` | Validate rule citations before replying; `off` disables the guard |
+| `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Optional custom local rules index path |
 
 For a locally installed MCP server, an example module setting is:
 
@@ -290,9 +299,8 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Use a dedicated Foundry account with only the access your group needs.
 - The assistant's role-aware rules currently rely on the model following
   `AGENTS.md`; the bridge does not enforce tool-level authorization.
-- Rule grounding also relies on model tool use and faithful citation. Missing
-  or insufficient SRD evidence must be treated as unverified, even when the
-  model sounds confident.
+- The citation gate verifies lookup provenance and page identity, but cannot
+  establish semantic accuracy or detect every implicit rules question.
 - The service example uses a dedicated, unprivileged system user. Its `.env`,
   `.state/`, and OpenCode home must be accessible to that account.
 - On the first start, existing chat messages are treated as history. After

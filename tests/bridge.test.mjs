@@ -17,7 +17,7 @@ async function fixture(t) {
 }
 
 function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSenders,
-  clock = () => 5000, resetMsgs = 1000, maxConcurrent = 3, fetchMessages }) {
+  clock = () => 5000, resetMsgs = 1000, maxConcurrent = 3, fetchMessages, replyGuard }) {
   return new FoundryMessageBridge({
     stateFile,
     aiId: "AI",
@@ -27,6 +27,7 @@ function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSende
     clock,
     resetMsgs,
     maxConcurrent,
+    replyGuard,
     fetchMessages: fetchMessages || (async () => messages),
     ask: asks || (async (prompt, sessionId) => {
       calls.push({ prompt, sessionId });
@@ -35,6 +36,28 @@ function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSende
     sendReply: sendReply || (async (sender, html) => calls.push({ sender, html }))
   });
 }
+
+test("citation guard receives this turn's tool calls and replaces a reply before whispering", async t => {
+  const stateFile = await fixture(t);
+  const messages = [message("history", 10)];
+  const calls = [];
+  const bridge = buildBridge({ stateFile, messages, calls,
+    asks: async () => ({ text: "<p>Unsupported ruling</p>", sessionID: "ses_rules",
+      ruleCalls: [{ name: "rules_search_rules", status: "completed", input: { query: "opportunity attack" } }] }),
+    replyGuard: async ({ question, reply, toolCalls }) => {
+      assert.equal(question, "Quelle est la règle ?");
+      assert.equal(reply, "<p>Unsupported ruling</p>");
+      assert.equal(toolCalls[0].input.query, "opportunity attack");
+      return "<p>Source non vérifiée.</p>";
+    }
+  });
+  await bridge.initialize();
+  messages.push(message("rule", 20, "u1", "Quelle est la règle ?"));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  assert.equal(calls.find(call => call.sender)?.html, "<p>Source non vérifiée.</p>");
+  assert.equal((await loadState(stateFile)).threads.u1.id, "ses_rules");
+});
 
 test("existing history is ignored and new whispers run in chronological order", async t => {
   const stateFile = await fixture(t);

@@ -33,3 +33,8 @@ test("MCP credentials and model configuration reference documented environment v
   assert.ok(config.providers.openrouter);
   assert.equal(config.providers.openrouter.models["baidu/ernie-5.5-flash-preview:free"].limit.output, 500);
 });
+
+test("rules citation verification is configurable without storing private rulebooks", () => {
+  assert.match(envExample, /^RULES_CITATION_MODE=enforce$/m);
+  assert.match(envExample, /^RULES_INDEX_PATH=$/m);
+});

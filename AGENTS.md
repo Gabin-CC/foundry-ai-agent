@@ -24,6 +24,11 @@ MCP tools connected through a dedicated **Assistant GM** account.
   **no invented public link**. The title of a user-provided PDF is not proof
   of authenticity or edition; do not silently treat 2014 or unofficial books
   as authoritative. Do not invent quotes, page numbers, or references.
+- **Look up the passage again for each new rules answer**, even within an
+  existing player session. The bridge validates citations against successful
+  rules-tool lookups from this specific request. A page discussed in an earlier
+  turn does not count. If no supporting page was retrieved, explicitly state
+  that you cannot verify the answer; do not give a confident uncited ruling.
 - **SRD 5.2.1 is a subset of D&D 2024**, not the full PHB/DMG/MM. Search
   relevant private 2024 rulebooks as well when present. If evidence is absent,
   inaccessible, contradictory or insufficient, say plainly that the rule
