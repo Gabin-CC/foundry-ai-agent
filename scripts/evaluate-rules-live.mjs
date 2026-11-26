@@ -6,7 +6,7 @@ import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateRuleSuite } from "../lib/rules-eval.mjs";
 import { checkOpencodeVersion } from "../lib/opencode-cli.mjs";
-import { loadRules } from "../lib/rules.mjs";
+import { RULES_INDEX_FILENAME, loadRules } from "../lib/rules.mjs";
 import { createIsolatedRulesWorkspace, isolatedProcessEnv,
   runIsolatedQuestion, validateOpenRouterModel } from "../lib/rules-live-eval.mjs";
 
@@ -19,7 +19,7 @@ const usage = `Usage:
 --execute          Explicitly authorize model calls (may incur provider charges).
 --model ID         OpenRouter model used by OpenCode; required for both modes.
 --output FILE      New JSONL output path; never overwrites an existing file.
---index FILE       Official SRD index; defaults to .rules/srd-5.2.1.json.
+--index FILE       Indexed corpus; defaults to .rules/rules-index.json (SRD-only evaluation).
 --case ID          Run one benchmark case by ID.
 --limit NUMBER     Run only the first N cases (1-13); cannot combine with --case.
 --timeout-ms N     Per-case timeout, default 180000 (max 600000).
@@ -27,7 +27,7 @@ const usage = `Usage:
 `;
 
 function argsOf(argv) {
-  const options = { index: join(project, ".rules", "srd-5.2.1.json"), binary: "opencode",
+  const options = { index: join(project, ".rules", RULES_INDEX_FILENAME), binary: "opencode",
     timeoutMs: 180000 };
   const values = new Set(["--model", "--output", "--index", "--case", "--limit", "--timeout-ms", "--binary"]);
   for (let i = 0; i < argv.length; i++) {

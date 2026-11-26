@@ -188,7 +188,9 @@ npm run rules:setup
 ```
 
 Cette commande télécharge le PDF anglais officiel et crée l'index local
-`.rules/`, ignoré par Git. Il n'emploie **ni le SRD 5.1 ni les règles 2014**.
+`.rules/rules-index.json`, ignoré par Git. Son nom reflète le fait qu'il peut
+contenir tous tes livres et campagnes, et pas seulement le SRD. Il n'emploie
+**ni le SRD 5.1 ni les règles 2014**.
 Sans téléchargement, tu peux indiquer ton exemplaire du même PDF :
 `npm run rules:setup -- --en /chemin/vers/SRD_CC_v5.2.1.pdf`.
 Conserve `.rules/` pendant les déploiements ; le compte `foundry-agent`
@@ -213,6 +215,11 @@ index rapide sans extraire à nouveau tes PDF :
 ```bash
 npm run rules:optimize
 ```
+
+Pour une installation existante, cette commande renomme également l'ancien
+`.rules/srd-5.2.1.json` en `.rules/rules-index.json`, **sans modifier son
+contenu**. Le pont sait lire l'ancien nom en attendant la migration. Le PDF
+officiel du SRD conserve son propre nom, qui reste exact.
 
 Lance la commande avec le compte de service qui peut écrire dans `.rules/`,
 puis redémarre le pont. Si l'index de recherche est absent ou périmé, il est
@@ -342,7 +349,7 @@ Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
 | `CHAT_LOOKBACK_MS` | `120000` | Chevauchement des requêtes incrémentales (ms) |
 | `STATE_FILE` | `.state/bridge-state.json` | Fichier local de reprise |
 | `RULES_CITATION_MODE` | `enforce` | Vérification des citations avant réponse ; `off` pour désactiver |
-| `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Chemin facultatif d'un index local |
+| `RULES_INDEX_PATH` | `.rules/rules-index.json` | Chemin facultatif d'un index local |
 | `RULES_ACCESS_FILE` | `rules-private/access.json` | Classement des livres : règles pour tous / contenu réservé au MJ |
 | `RULES_SEARCH_METRICS` | `0` | `1` pour journaliser la durée et la taille des recherches dans les règles |
 
