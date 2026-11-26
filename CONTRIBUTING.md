@@ -26,19 +26,20 @@ available in **English and French**.
 
 ## Local checks
 
-The project is still adding its automated test suite. Before submitting a PR,
-run the checks that apply to your changes:
+Before submitting a PR, run the checks that apply to your changes:
 
 ```bash
 node --check listen.mjs
+for file in lib/*.mjs; do node --check "$file"; done
 node -e 'JSON.parse(require("node:fs").readFileSync("opencode.json", "utf8"))'
 bash -n install.sh run.sh
 ./install.sh --help
+node --test tests/*.test.mjs
 ```
 
-When tests and CI are introduced, they will become required for changes to
-runtime behavior. Do not claim an integration test passed unless you ran it
-against a compatible Foundry and MCP environment.
+The existing GitHub Actions workflow runs static checks and Node.js tests.
+Do not claim an integration test passed unless you ran it against a compatible
+Foundry and MCP environment.
 
 ## Pull request checklist
 
