@@ -117,15 +117,35 @@ Start manually:
 ./run.sh
 ```
 
-Or use the example systemd service, adjusting its paths and service account
-for your server first:
+Or use the example systemd service. It intentionally runs as an unprivileged
+`foundry-agent` system account, rather than root. If you installed the agent
+under `/opt/foundry-ai-agent`, create that account and give it access to
+the existing credentials and checkpoint state:
 
 ```bash
-sudo cp foundry-ai-agent.service /etc/systemd/system/
+sudo groupadd --system foundry-agent
+sudo useradd --system --gid foundry-agent --home-dir /var/lib/foundry-agent --create-home --shell /usr/sbin/nologin foundry-agent
+sudo install -d -m 700 -o foundry-agent -g foundry-agent /opt/foundry-ai-agent/.state
+sudo chown foundry-agent:foundry-agent /opt/foundry-ai-agent/.env
+sudo chown -R foundry-agent:foundry-agent /opt/foundry-ai-agent/.state
+sudo chmod 600 /opt/foundry-ai-agent/.env
+sudo install -m 644 foundry-ai-agent.service /etc/systemd/system/foundry-ai-agent.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now foundry-ai-agent
 journalctl -u foundry-ai-agent -f
 ```
+
+These account creation commands are one-time setup; skip them if the account
+already exists. Check that OpenCode is installed in the service's `PATH`
+(or set an absolute `OPENCODE_BIN` in `.env`), and that the account can write
+to `/var/lib/foundry-agent`. Adapt the paths if your checkout is elsewhere.
+Existing deployments using a root-based unit should **not** replace their
+service file without first creating the user and fixing the permissions;
+merging this repository change alone does not change a running service.
+In particular, existing OpenCode sessions may be stored under root's home:
+**migrate or back up OpenCode's session data before switching `HOME`**, or
+saved per-player session IDs may become unusable. No account migration is
+required just to update the bridge code.
 
 In Foundry, whisper to your dedicated assistant account:
 
@@ -195,8 +215,8 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Use a dedicated Foundry account with only the access your group needs.
 - The assistant's role-aware rules currently rely on the model following
   `AGENTS.md`; the bridge does not enforce tool-level authorization.
-- The service example should be adapted to run as a dedicated, unprivileged
-  system user on production servers.
+- The service example uses a dedicated, unprivileged system user. Its `.env`,
+  `.state/`, and OpenCode home must be accessible to that account.
 - On the first start, existing chat messages are treated as history. After
   that, the bridge resumes new messages from individual per-sender checkpoints.
   Existing state files from the original global-checkpoint implementation are

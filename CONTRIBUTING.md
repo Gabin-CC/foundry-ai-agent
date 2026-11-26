@@ -29,15 +29,18 @@ available in **English and French**.
 Before submitting a PR, run the checks that apply to your changes:
 
 ```bash
+npm ci
 node --check listen.mjs
 for file in lib/*.mjs; do node --check "$file"; done
 node -e 'JSON.parse(require("node:fs").readFileSync("opencode.json", "utf8"))'
 bash -n install.sh run.sh
 ./install.sh --help
-node --test tests/*.test.mjs
+npm test
 ```
 
-The existing GitHub Actions workflow runs static checks and Node.js tests.
+The GitHub Actions workflow installs the pinned dependencies and runs static
+checks and Node.js tests. If you have a live Foundry instance, stop the bridge
+service before running the read-only `npm run smoke:foundry` check.
 Do not claim an integration test passed unless you ran it against a compatible
 Foundry and MCP environment.
 
