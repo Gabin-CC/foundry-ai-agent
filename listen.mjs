@@ -20,6 +20,7 @@ const POLL_MS = Number(env.POLL_MS || 3000);
 const MAX_REPLY = Number(env.MAX_REPLY || 4000);
 const RESET_MS = Number(env.RESET_MS || 86400000);
 const RESET_MSGS = Number(env.RESET_MSGS || 1000);
+const MAX_CONCURRENT = Number(env.MAX_CONCURRENT || 3);
 
 const run = promisify(execFile);
 
@@ -63,6 +64,7 @@ const bridge = new FoundryMessageBridge({
   resetMs: RESET_MS,
   resetMsgs: RESET_MSGS,
   maxReply: MAX_REPLY,
+  maxConcurrent: MAX_CONCURRENT,
   ask: askOpencode,
   fetchMessages: () => session.doc("get", "ChatMessage", { query: {} }),
   sendReply: (toId, html) => session.doc("create", "ChatMessage", {
@@ -92,7 +94,10 @@ async function loop() {
   } catch (error) {
     console.error("[agent] polling failed; retrying next cycle", error);
   }
-  if (stopping) await closeSession();
+  if (stopping) {
+    await bridge.waitForIdle();
+    await closeSession();
+  }
   else timer = setTimeout(loop, POLL_MS);
 }
 
@@ -101,7 +106,7 @@ function shutdown() {
   if (timer) {
     clearTimeout(timer);
     timer = null;
-    void closeSession();
+    void bridge.waitForIdle().then(closeSession);
   }
 }
 
