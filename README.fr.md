@@ -61,7 +61,26 @@ cd foundry-ai-agent
 ./install.sh
 ```
 
-Installe d'abord OpenCode **V2**, puis vérifie le binaire (sans appel IA) :
+L'installateur vérifie désormais la présence d'**OpenCode V2**. En mode
+interactif, il propose d'installer globalement le paquet npm officiel
+**`@opencode/cli@^2`** si V2 est absent ou si une V1 est détectée. Il ne
+désinstalle jamais automatiquement l'ancien paquet `opencode-ai`.
+
+Pour installer V2 explicitement en mode non interactif :
+
+```bash
+./install.sh --lang fr --non-interactive --install-opencode
+```
+
+L'installation npm globale peut nécessiter des droits supplémentaires ou
+entrer en conflit avec un binaire V1 : dans ce cas, résous le conflit
+manuellement. Tu peux aussi installer V2 toi-même avec la
+[procédure officielle](https://opencode.ai/docs/), ou choisir un binaire
+spécifique via `--opencode-bin CHEMIN` puis `OPENCODE_BIN` dans `.env`.
+L'option `--skip-opencode` reporte seulement la vérification ; l'agent
+refusera toujours de démarrer sans V2.
+
+Vérifie ensuite le binaire avec le compte du service (sans appel IA) :
 
 ```bash
 npm run check:opencode:v2

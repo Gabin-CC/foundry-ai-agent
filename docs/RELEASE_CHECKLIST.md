@@ -14,6 +14,9 @@ server have different responsibilities; verify both on a real installation.
 - [ ] Fill in Foundry credentials, model settings and MCP endpoint details.
 - [ ] Install OpenCode **V2.x** under the service account and run
       `npm run check:opencode:v2`. V1 must fail the preflight.
+- [ ] Verify `install.sh` prompts before installing the npm V2 package
+      `@opencode/cli`, uses `--install-opencode` only by explicit request,
+      and rejects an incompatible binary in unattended mode.
 - [ ] Run `npm test` (all unit tests pass).
 - [ ] Run `npm run check:release` from a Git checkout (version metadata and
       tracked-file path checks pass).

@@ -85,7 +85,24 @@ cd foundry-ai-agent
 ./install.sh
 ```
 
-Install OpenCode **V2** before starting the bridge, then verify its binary:
+The installer checks that **OpenCode V2** is present. If missing or still V1,
+it offers to install the official npm package **`@opencode/cli@^2`** globally
+when running interactively. It never removes the old `opencode-ai` package
+automatically. For unattended setups, choose explicitly:
+
+```bash
+./install.sh --lang en --non-interactive --install-opencode
+```
+
+Global npm installation may require elevated package-manager permissions and
+can conflict with an existing V1 binary; resolve those conflicts manually.
+You can instead install V2 yourself via the
+[official OpenCode CLI instructions](https://opencode.ai/docs/). To configure
+a separate binary, use `--opencode-bin PATH` during installation and set
+`OPENCODE_BIN` in `.env`. To defer the check (for an offline/bootstrap setup),
+pass `--skip-opencode`; the bridge still refuses to start without V2.
+
+Then verify the binary available to the service account:
 
 ```bash
 npm run check:opencode:v2

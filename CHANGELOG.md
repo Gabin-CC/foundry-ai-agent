@@ -5,6 +5,11 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
+- Interactive English/French installer now verifies OpenCode V2, optionally
+  installs the official npm package `@opencode/cli@^2`, and offers explicit
+  flags for unattended installation or deferred checks. V1 packages are never
+  removed silently.
+
 ### Breaking: OpenCode V2 only
 
 - Require OpenCode 2.x at startup; reject V1 and untested major versions
