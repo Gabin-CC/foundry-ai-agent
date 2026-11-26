@@ -11,3 +11,7 @@ npm-debug.log*
 # Miscellaneous
 .DS_Store
 .rules/
+
+# Users' purchased/private rulebooks; only the instruction file is public.
+/rules-private/*
+!/rules-private/README.md

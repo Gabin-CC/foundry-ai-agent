@@ -30,7 +30,7 @@ constituent pas une restriction technique des permissions.
 - Transmission du rôle Foundry du joueur dans chaque demande.
 - Accès aux fonctions Foundry via MCP (lecture, jets, interactions).
 - Recherche locale en lecture seule dans le SRD officiel 5.2.1 **anglais**,
-  avec références aux pages PDF pour les règles D&D 2024.
+  complétée si souhaité par des PDF privés, avec références aux pages exactes.
 - Installation en anglais ou en français, avec réponses de l'assistant dans
   la langue de l'interlocuteur (français par défaut).
 
@@ -163,13 +163,33 @@ doit pouvoir le lire. Pour un service non-root, exécute idéalement la prépara
 avec ce compte, dans un dossier `.rules/` dont il est propriétaire.
 Si OpenCode tourne déjà, redémarre le pont après la préparation.
 
-**Limites :** le SRD ne contient **pas toutes** les règles des livres achetés
-(*Player's Handbook*, *Dungeon Master's Guide*, *Monster Manual*). Tes PDF
-commerciaux ne sont ni inclus ni indexés par cette PR ; ne les publie pas
-dans le dépôt open source. Leur indexation privée pourra faire l'objet d'une
-évolution distincte. Si une réponse n'est pas vérifiable dans le SRD, l'IA
-doit l'indiquer plutôt que l'inventer. Les consignes du modèle ne constituent
-pas une garantie technique : vérifie la citation lors d'un arbitrage important.
+### Ajouter ses propres livres PDF
+
+Si tu possèdes d'autres livres de règles officiels compatibles D&D 2024,
+dépose leurs PDF **directement dans `rules-private/`**, par exemple :
+
+```text
+rules-private/Players_Handbook_2024.pdf
+rules-private/Dungeon_Masters_Guide_2024.pdf
+```
+
+Puis relance `npm run rules:setup` et redémarre le pont. L'agent pourra
+interroger le SRD **et** les livres présents, avec une citation « nom du PDF,
+page PDF ». Tes livres et l'index restent **exclus de Git** : seul le mode
+d'emploi du dossier est public. Les fichiers doivent contenir du texte
+extractible (pas de simples scans sans OCR) et peser au maximum 250 Mo chacun.
+L'agent ne peut pas certifier automatiquement qu'un PDF ajouté correspond
+réellement aux règles 2024 ; n'ajoute ni règles 2014 ni documents maison.
+
+**Confidentialité importante :** les PDF restent sur le serveur, mais les
+**extraits retrouvés sont transmis par OpenCode à ton fournisseur IA** pour
+générer les réponses. Assure-toi d'avoir le droit et de souhaiter cet usage.
+
+**Limites :** le SRD ne contient **pas toutes** les règles des livres achetés.
+Le dépôt ne distribue aucun livre commercial. Si une réponse n'est pas
+vérifiable dans les sources disponibles, l'IA doit l'indiquer plutôt que
+l'inventer. Ses consignes ne garantissent pas à elles seules l'exactitude :
+vérifie une citation lors d'un arbitrage important.
 
 Attribution du SRD 5.2.1 (CC-BY-4.0) :
 

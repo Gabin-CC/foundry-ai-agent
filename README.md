@@ -32,8 +32,8 @@ whose access is appropriate for your group.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
 - Includes an optional local, read-only D&D 2024 rules MCP tool that retrieves
-  English SRD 5.2.1 passages with verifiable PDF page links. The agent can
-  explain those rules in French without using the 2014 SRD.
+  English SRD 5.2.1 passages with verifiable PDF page links, plus extra locally
+  supplied PDF rulebooks. The agent can explain those rules in French.
 - Offers an English/French interactive installer; the runtime can answer in
   the language of the player, with French as the default.
 
@@ -51,6 +51,7 @@ Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
 | `listen.mjs` | Foundry chat polling, per-sender sessions, OpenCode bridge |
 | `opencode.json` | Model and remote Foundry MCP configuration |
 | `rules-mcp.mjs` | Local read-only SRD 5.2.1 search and page lookup |
+| `rules-private/` | Optional private rulebook PDFs (ignored by Git) |
 | `AGENTS.md` | Instructions for the in-game AI assistant |
 | `install.sh` | Interactive English/French installation |
 | `run.sh` | Load `.env` and start the bridge |
@@ -186,19 +187,42 @@ If you run as `foundry-agent` under systemd, create the directory as that user
 and run the setup command with that account (or arrange equivalent ownership).
 Restart OpenCode/bridge after setup if it was already running.
 
-The assistant can then cite, for example, *SRD 5.2.1 (EN), PDF p. 15* with
-an official PDF link. **This is not a guarantee against model mistakes**:
+### Add your own PDF rulebooks
+
+If you already own additional compatible official D&D 2024 rulebooks, put
+their readable PDF files directly in **`rules-private/`** (e.g.
+`rules-private/Players_Handbook_2024.pdf`) and re-run:
+
+```bash
+npm run rules:setup
+```
+
+This extends the same local index with the contents of those books. The local
+rules MCP server can list all sources, search them, and return the exact PDF
+page. Official SRD results include a clickable D&D Beyond PDF URL; private
+books are cited by **filename and PDF page** (without a fabricated web link).
+Only the instruction file in `rules-private/` is committed; PDFs and their
+indexed text are excluded from Git. The tool cannot independently verify
+whether a user-provided PDF is an official 2024 book, so add only sources
+appropriate to your game. See [private-rulebook instructions](rules-private/README.md)
+for limits and details. Re-index after adding, changing or removing books.
+
+**Privacy:** the books and index stay on the machine, but **relevant excerpts
+from them are sent to the configured AI model provider by OpenCode** when the
+assistant consults them. Do not add books whose license or your privacy
+requirements prohibit that use.
+
+The assistant can cite, for example, *SRD 5.2.1 (EN), PDF p. 15* with an
+official PDF link, or *Players_Handbook_2024.pdf, PDF p. 87*. **This is not a
+guarantee against model mistakes**:
 `AGENTS.md` is a behavioral instruction, not a tool-enforced citation gate.
 Check that the cited page actually supports any consequential ruling.
 If the local index is missing or no supporting rule is found, the assistant is
 instructed to disclose that it cannot verify the ruling, rather than guess.
 
-**Scope:** SRD 5.2.1 contains only part of the 2024 rules. It does not
-include every rule in the purchased *Player's Handbook*, *Dungeon Master's
-Guide*, or *Monster Manual*. Those books are **not downloaded, indexed,
-shipped, or reproduced** by this open-source repository. Privately owned PDFs
-could be supported separately through a local-only index in future work; do
-not commit or redistribute them here.
+**Scope:** SRD 5.2.1 contains only part of the 2024 rules. The project does
+not ship or download any commercial books. Additional books are used **only
+when an operator explicitly places their PDFs in the local private folder**.
 
 Attribution required for the source material:
 

@@ -1,10 +1,10 @@
-// Local stdio MCP server. Never writes to Foundry; reads only an indexed,
-// version-pinned English copy of the official CC-BY-4.0 SRD 5.2.1.
+// Local stdio MCP server. Never writes to Foundry; reads the pinned official
+// English SRD 5.2.1 and optional user-supplied local rule PDFs.
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
-import { loadRules, readRulePage, searchRules } from "./lib/rules.mjs";
+import { listRuleSources, loadRules, readRulePage, searchRules } from "./lib/rules.mjs";
 
 const indexPath = process.env.RULES_INDEX_PATH || join(process.cwd(), ".rules", "srd-5.2.1.json");
 let cache;
@@ -16,37 +16,47 @@ async function index() {
   return cache;
 }
 
-const server = new McpServer({ name: "dnd-2024-srd", version: "0.1.0" });
+const server = new McpServer({ name: "dnd-2024-rules", version: "0.1.0" });
 const errorResult = error => ({
   isError: true,
-  content: [{ type: "text", text: `SRD 5.2.1 unavailable: ${error.message}. Run npm run rules:setup. Do not guess a rule.` }]
+  content: [{ type: "text", text: `Rules index unavailable: ${error.message}. Run npm run rules:setup. Do not guess a rule.` }]
+});
+
+server.registerTool("list_rule_sources", {
+  description: "List locally indexed rule sources: the verifiable official English SRD 5.2.1 plus optional user-provided PDFs. User-provided PDF titles do not prove they are official or D&D 2024.",
+  inputSchema: {},
+  annotations: { readOnlyHint: true, openWorldHint: false }
+}, async () => {
+  try { return { content: [{ type: "text", text: JSON.stringify(listRuleSources(await index())) }] }; }
+  catch (error) { return errorResult(error); }
 });
 
 server.registerTool("search_rules", {
-  description: "Search the English official D&D 2024 SRD 5.2.1; returns verifiable PDF pages and excerpts. Search BEFORE answering a D&D rules question, including one asked in French; translate search terms to English. SRD is not the complete Player's Handbook. If no relevant passage is found, say it cannot be verified.",
+  description: "Search English rules in official D&D 2024 SRD 5.2.1 plus user-provided local PDF rulebooks; returns actual PDF page numbers, source names, excerpts, and links for official SRD pages. Search BEFORE answering a rules question in any language. Verify user-provided edition. No relevant passage means no verified answer.",
   inputSchema: {
     query: z.string().min(2).max(500).describe("English rule terms, e.g. 'grappled condition' or 'opportunity attack'"),
+    source: z.string().default("all").describe("'all', 'srd', or one PDF filename returned by list_rule_sources"),
     limit: z.number().int().min(1).max(8).default(4)
   },
   annotations: { readOnlyHint: true, openWorldHint: false }
-}, async ({ query, limit }) => {
+}, async ({ query, source, limit }) => {
   try {
-    const matches = searchRules(await index(), query, { limit });
+    const matches = searchRules(await index(), query, { source, limit });
     return { content: [{ type: "text", text: matches.length
       ? JSON.stringify(matches)
-      : "No matching SRD 5.2.1 passage. This does NOT mean the rule does not exist; do not invent an answer or citation." }] };
+      : "No matching passage in the indexed sources. This does NOT mean the rule does not exist; do not invent an answer or citation." }] };
   } catch (error) { return errorResult(error); }
 });
 
 server.registerTool("read_rule_page", {
-  description: "Read an exact English official SRD 5.2.1 PDF page returned by search_rules to verify context before citing it.",
-  inputSchema: { page: z.number().int().min(1) },
+  description: "Read the exact page from a source returned by search_rules; specify the source_id from the result. User PDFs have no public web URL; cite filename and PDF page.",
+  inputSchema: { page: z.number().int().min(1), source: z.string().default("srd") },
   annotations: { readOnlyHint: true, openWorldHint: false }
-}, async ({ page }) => {
+}, async ({ page, source }) => {
   try {
-    const result = readRulePage(await index(), page);
+    const result = readRulePage(await index(), page, source);
     return { content: [{ type: "text", text: result ? JSON.stringify(result)
-      : "Page unavailable in SRD 5.2.1 index; do not cite it." }] };
+      : "Page unavailable for that source in the rules index; do not cite it." }] };
   } catch (error) { return errorResult(error); }
 });
 
