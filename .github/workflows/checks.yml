@@ -32,3 +32,5 @@ jobs:
         run: node --input-type=module -e 'import { loadFoundrySession } from "./lib/foundry-module.mjs"; await loadFoundrySession();'
       - name: Run unit tests (no live Foundry needed)
         run: npm test
+      - name: Validate release metadata and tracked paths
+        run: npm run check:release

@@ -13,6 +13,8 @@ server have different responsibilities; verify both on a real installation.
       is never overwritten.
 - [ ] Fill in Foundry credentials, model settings and MCP endpoint details.
 - [ ] Run `npm test` (all unit tests pass).
+- [ ] Run `npm run check:release` from a Git checkout (version metadata and
+      tracked-file path checks pass).
 - [ ] Stop the bridge service so it does not compete for the assistant login.
       Run `npm run smoke:foundry` with Foundry running. It must connect and
       read users and chat history without posting anything.
@@ -47,7 +49,12 @@ server have different responsibilities; verify both on a real installation.
       CODE_OF_CONDUCT.md, LICENSE and `.env.example` match the release.
 - [ ] Review the repository for credentials, private Foundry data and files
       that should not become public. Never commit `.env` or `.state/`.
+- [ ] Scan **file contents and the full Git history** for credentials and
+      private campaign data with an appropriate secret scanner; the automated
+      tracked-path check alone is not sufficient.
 - [ ] Record changes in CHANGELOG.md, choose a version and tag it explicitly.
+- [ ] Review [v0.1.0 release notes](RELEASE_NOTES_v0.1.0.md), including known
+      limitations and upgrade advice.
 - [ ] Only after the live checks, decide when to make the repository public
       and publish a GitHub release. Neither step is automatic.
 

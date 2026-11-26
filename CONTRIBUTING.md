@@ -36,6 +36,7 @@ node -e 'JSON.parse(require("node:fs").readFileSync("opencode.json", "utf8"))'
 bash -n install.sh run.sh
 ./install.sh --help
 npm test
+npm run check:release
 ```
 
 The GitHub Actions workflow installs the pinned dependencies and runs static

@@ -1,9 +1,11 @@
 # Changelog
 
-Notable changes to Foundry AI Agent are recorded here. No public release has
-been tagged yet; changes remain under **Unreleased** until explicitly released.
+Notable changes to Foundry AI Agent are recorded here. Version 0.1.0 is a
+**release candidate**, not a published release or Git tag yet.
 
-## Unreleased
+## [Unreleased]
+
+## [0.1.0] - Release candidate (not tagged)
 
 - English project documentation and French translation, bilingual installer,
   contribution guidelines and code of conduct.
@@ -17,3 +19,5 @@ been tagged yet; changes remain under **Unreleased** until explicitly released.
   smoke test with a release checklist.
 - Non-root systemd service template with explicit account provisioning,
   writable OpenCode home and safe permission guidance.
+- Updated the pinned Foundry client to the MCP server revision with
+  socket-backed chat caching and verified timestamp-filtered reads.
