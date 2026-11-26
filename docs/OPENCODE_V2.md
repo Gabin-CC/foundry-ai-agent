@@ -23,9 +23,27 @@ whispers merely because the model backend changed.
    curl -fsSL https://opencode.ai/v2/install | bash
    ```
 
+   The official **npm** package for V2 is **`@opencode/cli`**, not
+   `opencode-ai` (the V1 package). The current installer checks the binary
+   and offers an interactive global V2 installation, or accepts the explicit
+   opt-in flag for automation:
+
+   ```bash
+   ./install.sh --lang en --non-interactive --install-opencode
+   # Or install it manually:
+   npm install --global '@opencode/cli@^2'
+   ```
+
+   A V1 npm installation may conflict with the same executable name. The
+   installer does **not** uninstall it or change global npm packages unless
+   the operator accepts the interactive prompt or passes `--install-opencode`.
+   Resolve any V1 package conflict manually, and avoid installing for root
+   when the service account cannot find that binary.
+
    If V1 was installed through a package manager, remove its conflicting
    package first. Both use the `opencode` command. Check the V2 install path
-   **as the same non-root user that runs the service**.
+   **as the same non-root user that runs the service**. For an offline setup
+   you may pass `./install.sh --skip-opencode`, but startup still requires V2.
 3. Keep the existing `.env`, `.state/`, `.rules/` and `rules-private/`
    directories. Ensure `OPENCODE_BIN` points to the V2 executable. No V1
    conversation backup/import is required, since old sessions are deliberately
