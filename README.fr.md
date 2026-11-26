@@ -196,6 +196,30 @@ doit pouvoir le lire. Pour un service non-root, exécute idéalement la prépara
 avec ce compte, dans un dossier `.rules/` dont il est propriétaire.
 Si OpenCode tourne déjà, redémarre le pont après la préparation.
 
+### Recherche rapide dans une grande bibliothèque
+
+L'**index complet reste sur le disque** : seuls les extraits trouvés entrent
+dans le contexte de l'IA. La recherche utilise un index lexical BM25 préparé
+à l'avance sur de courts passages. Chaque recherche renvoie **4 extraits par
+défaut** (8 maximum), d'environ 1 300 caractères chacun. Une page longue est
+lue par fenêtres de **6 000 caractères** ; l'IA peut continuer avec
+`next_offset` si nécessaire. Les recherches du MJ privilégient légèrement le
+SRD et les ouvrages classés « règles pour tous ».
+
+`npm run rules:setup` crée désormais aussi `.rules/search-v1.json` (privé et
+ignoré par Git). **Tu as déjà indexé des milliers de pages ?** Prépare cet
+index rapide sans extraire à nouveau tes PDF :
+
+```bash
+npm run rules:optimize
+```
+
+Lance la commande avec le compte de service qui peut écrire dans `.rules/`,
+puis redémarre le pont. Si l'index de recherche est absent ou périmé, il est
+reconstruit en mémoire sans inventer de sources. Pour mesurer les durées,
+le nombre de résultats et les caractères renvoyés sans journaliser les
+questions des joueurs, définis `RULES_SEARCH_METRICS=1`.
+
 ### Ajouter ses propres livres PDF
 
 Si tu possèdes d'autres livres de règles officiels compatibles D&D 2024,
@@ -320,6 +344,7 @@ Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
 | `RULES_CITATION_MODE` | `enforce` | Vérification des citations avant réponse ; `off` pour désactiver |
 | `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Chemin facultatif d'un index local |
 | `RULES_ACCESS_FILE` | `rules-private/access.json` | Classement des livres : règles pour tous / contenu réservé au MJ |
+| `RULES_SEARCH_METRICS` | `0` | `1` pour journaliser la durée et la taille des recherches dans les règles |
 
 Exemple pour un module MCP installé localement :
 

@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { listRuleSources, loadRules, readRulePage, searchRules, SOURCE, SOURCE_SHA256,
-  validPdfName, validateIndex } from "../lib/rules.mjs";
+import { compileRulesSearch, listRuleSources, loadRules, readRulePage, searchRules,
+  SEARCH_SIDECAR_NAME, SOURCE, SOURCE_SHA256, validPdfName, validateIndex } from "../lib/rules.mjs";
 
 const index = {
   version: "5.2.1",
@@ -34,10 +35,9 @@ test("retrieval returns an exact official English SRD PDF URL and page", () => {
 test("private PDFs are searchable with their own source ID and page, never a fake official link", () => {
   const found = searchRules(index, "Azure Step", { source: "Players_Handbook_2024.pdf" });
   assert.equal(found[0].source_id, "Players_Handbook_2024.pdf");
-  assert.equal(found[0].page, 53);
   assert.equal(found[0].url, null);
   assert.match(found[0].kind, /not independently verified/);
-  assert.deepEqual(found.map(item => item.page), [53, 87]);
+  assert.deepEqual(found.map(item => item.page).sort((a, b) => a - b), [53, 87]);
   assert.equal(readRulePage(index, 53, "Players_Handbook_2024.pdf").source, "Players_Handbook_2024.pdf");
   assert.equal(readRulePage(index, 53).source, "SRD 5.2.1 EN");
   assert.equal(listRuleSources(index)[1].id, "Players_Handbook_2024.pdf");
@@ -53,6 +53,47 @@ test("source pages are read as published, with no fabricated missing page", () =
   assert.throws(() => validateIndex({ ...index, private_sources: [{ name: "../private.pdf", sha256: "a".repeat(64) }] }), /Malformed private/);
   assert.equal(validPdfName("../oops.pdf"), false);
   assert.equal(validPdfName("Rules2024.pdf"), true);
+});
+
+test("precompiled search sidecar is compact, deterministic and ignored when stale", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "rules-search-sidecar-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const path = join(directory, "srd-5.2.1.json");
+  const raw = JSON.stringify(index);
+  await writeFile(path, raw);
+  const data = compileRulesSearch(index);
+  assert.ok(data.documents.length >= index.pages.length);
+  assert.equal(data.page_count, index.pages.length);
+  assert.ok(Array.isArray(data.documents[0]));
+  const cached = { ...data, index_sha256: createHash("sha256").update(raw).digest("hex") };
+  const sidecar = join(directory, SEARCH_SIDECAR_NAME);
+  await writeFile(sidecar, JSON.stringify(cached));
+  const withSidecar = await loadRules(path);
+  assert.deepEqual(searchRules(withSidecar, "opportunity attack", { source: "srd" }),
+    searchRules(index, "opportunity attack", { source: "srd" }));
+  await writeFile(sidecar, JSON.stringify({ ...cached, index_sha256: "stale" }));
+  const rebuilt = await loadRules(path);
+  assert.deepEqual(searchRules(rebuilt, "Azure Step", { source: "Players_Handbook_2024.pdf" }),
+    searchRules(index, "Azure Step", { source: "Players_Handbook_2024.pdf" }));
+});
+
+test("ranking can prefer public rulebooks for equally relevant rules", () => {
+  const duplicate = { ...index,
+    private_sources: [...index.private_sources, { name: "Campaign.pdf", sha256: "b".repeat(64) }],
+    pages: [...index.pages, { source: "Campaign.pdf", language: "en", page: 3,
+      text: "Imaginary example for test: Azure Step lets a wizard dance in blue light." }] };
+  const results = searchRules(duplicate, "Azure Step", { preferredSources: ["Players_Handbook_2024.pdf"] });
+  assert.equal(results[0].source_id, "Players_Handbook_2024.pdf");
+});
+
+test("a rules glossary heading outranks passing monster mentions", () => {
+  const sample = { ...index, private_sources: [], pages: [
+    { source: "srd", language: "en", page: 12,
+      text: "Grappled\nWhile you have the Grappled condition, your Speed is 0." },
+    { source: "srd", language: "en", page: 301,
+      text: "Monster description. It causes the Grappled condition. A creature in the Grappled condition suffers an effect." }
+  ] };
+  assert.equal(searchRules(sample, "grappled condition")[0].page, 12);
 });
 
 test("local MCP server exposes read-only rules search and exact-page verification", async t => {
@@ -133,6 +174,42 @@ test("player MCP cannot list, search or read a campaign, including by exact file
   const allowed = await client.callTool({ name: "read_rule_page",
     arguments: { source: "Players_Handbook_2024.pdf", page: 53 } });
   assert.match(allowed.content[0].text, /Azure Step/);
+
+  // Policy changes take effect without rebuilding the PDF search corpus.
+  await writeFile(policyPath, JSON.stringify({ version: 1, rules_for_all: [] }));
+  const updated = await client.callTool({ name: "list_rule_sources", arguments: {} });
+  assert.deepEqual(JSON.parse(updated.content[0].text).map(item => item.id), ["srd"]);
+  const afterChange = await client.callTool({ name: "search_rules",
+    arguments: { query: "Azure Step", source: "all" } });
+  assert.doesNotMatch(afterChange.content[0].text, /Azure Step/);
+});
+
+test("MCP paginates long pages instead of flooding the model context", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "rules-page-window-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const path = join(directory, "index.json");
+  const longText = "Spellcasting rules and concentration. ".repeat(300);
+  await writeFile(path, JSON.stringify({ ...index,
+    pages: [{ source: "srd", language: "en", page: 9, text: longText }] }));
+  const transport = new StdioClientTransport({ command: process.execPath,
+    args: [resolve("rules-mcp.mjs")], cwd: resolve("."),
+    env: { ...process.env, RULES_INDEX_PATH: path, RULES_ACCESS_ROLE: "player" } });
+  const client = new Client({ name: "window-test", version: "1.0.0" });
+  t.after(async () => client.close());
+  await client.connect(transport);
+  const first = await client.callTool({ name: "read_rule_page", arguments: { page: 9 } });
+  const firstPage = JSON.parse(first.content[0].text);
+  assert.equal(firstPage.text.length, 6000);
+  assert.equal(firstPage.next_offset, 6000);
+  assert.equal(firstPage.total_characters, longText.length);
+  const next = await client.callTool({ name: "read_rule_page",
+    arguments: { page: 9, offset: firstPage.next_offset } });
+  const nextPage = JSON.parse(next.content[0].text);
+  assert.equal(firstPage.text + nextPage.text, longText);
+  assert.equal(nextPage.next_offset, null);
+  const beyond = await client.callTool({ name: "read_rule_page",
+    arguments: { page: 9, offset: longText.length } });
+  assert.match(beyond.content[0].text, /unavailable/i);
 });
 
 test("missing SRD corpus fails explicitly, never returning made-up citations", async t => {

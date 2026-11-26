@@ -48,4 +48,5 @@ test("MCP credentials and model configuration reference documented environment v
 test("rules citation verification is configurable without storing private rulebooks", () => {
   assert.match(envExample, /^RULES_CITATION_MODE=enforce$/m);
   assert.match(envExample, /^RULES_INDEX_PATH=$/m);
+  assert.match(envExample, /^RULES_SEARCH_METRICS=0$/m);
 });

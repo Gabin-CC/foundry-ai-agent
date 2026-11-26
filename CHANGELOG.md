@@ -5,6 +5,11 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
+- Precompute a reusable BM25 lexical lookup for large, multi-book rules
+  corpora. `npm run rules:optimize` upgrades an existing index without
+  re-extracting PDFs; setup creates the lookup automatically. Prefer public
+  rulebooks when a GM searches all sources, bound exact-page MCP reads to
+  6,000-character windows and add opt-in retrieval latency/size diagnostics.
 - Separate indexed books into **rules for everyone** and **GM-only content**,
   with private PDFs hidden from players until their filenames are explicitly
   shared in `rules-private/access.json`. Filter the local MCP source list,

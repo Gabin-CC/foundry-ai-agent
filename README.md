@@ -218,6 +218,30 @@ If you run as `foundry-agent` under systemd, create the directory as that user
 and run the setup command with that account (or arrange equivalent ownership).
 Restart OpenCode/bridge after setup if it was already running.
 
+### Fast search in large libraries
+
+The **full indexed corpus** stays on disk; only retrieved excerpts enter the
+model's prompt. The rules MCP uses a precomputed lexical (BM25) lookup across
+short, overlapping passages. A search returns **4 excerpts by default**
+(at most 8), around 1,300 characters each. Reading a long PDF page returns
+at most **6,000 characters**
+at a time; the assistant can continue with `next_offset` when needed. GM
+searches slightly prefer the SRD and books classified as rules for everyone.
+
+`npm run rules:setup` now also writes the private
+`.rules/search-v1.json` lookup. **Already indexed thousands of PDF pages?**
+Generate only the faster lookup, without parsing or downloading a single PDF:
+
+```bash
+npm run rules:optimize
+```
+
+Run it as the service account with write access to `.rules/`, then restart the
+bridge. This sidecar is ignored by Git. An absent or stale sidecar falls back
+to building the same lookup in memory; no citations are invented. For optional
+timings and result sizes in the MCP stderr log, set `RULES_SEARCH_METRICS=1`.
+Those logs contain counts and durations, not players' search phrases.
+
 ### Add your own PDF rulebooks
 
 If you already own additional compatible official D&D 2024 rulebooks, put
@@ -347,6 +371,7 @@ restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
 | `RULES_CITATION_MODE` | `enforce` | Validate rule citations before replying; `off` disables the guard |
 | `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Optional custom local rules index path |
 | `RULES_ACCESS_FILE` | `rules-private/access.json` | Private rules-for-all / GM-only book classification |
+| `RULES_SEARCH_METRICS` | `0` | Set to `1` to log rules lookup duration, match count and output character count |
 
 For a locally installed MCP server, an example module setting is:
 

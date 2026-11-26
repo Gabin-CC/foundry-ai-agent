@@ -7,6 +7,7 @@ import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { SOURCE, SOURCE_SHA256, validPdfName, validateIndex } from "../lib/rules.mjs";
+import { writeRulesSearchSidecar } from "../lib/rules-search-build.mjs";
 import { fingerprintPrivatePdf } from "../lib/private-pdf.mjs";
 
 const run = promisify(execFile);
@@ -97,6 +98,8 @@ for (const entry of entries) {
 const result = validateIndex({ version: "5.2.1", pdf_sha256: SOURCE_SHA256, private_sources, pages });
 const output = join(directory, "srd-5.2.1.json");
 const temporary = `${output}.${process.pid}.tmp`;
-await writeFile(temporary, JSON.stringify(result), { mode: 0o600 });
+const sourceText = JSON.stringify(result);
+await writeFile(temporary, sourceText, { mode: 0o600 });
 await rename(temporary, output);
-console.log(`Ready: ${output} (${pages.length} pages, ${private_sources.length} private PDFs). Restart OpenCode to reload if needed.`);
+const search = await writeRulesSearchSidecar(result, sourceText, directory);
+console.log(`Ready: ${output} (${pages.length} pages, ${private_sources.length} private PDFs; ${search.passageCount} search passages). Restart OpenCode to reload if needed.`);
