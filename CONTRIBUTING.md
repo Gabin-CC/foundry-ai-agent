@@ -27,6 +27,9 @@ available in **English and French**.
    [SRD rules evaluation](docs/RULES_EVALUATION.md) if the relevant behavior
    changes. Keep human-reviewed outcomes separate from pattern smoke checks;
    do not use production or private chat transcripts as test fixtures.
+10. Do not invoke `npm run eval:rules:live -- --execute` in CI or as part of a
+    routine test run. It can call a paid provider; keep test coverage based on
+    synthetic OpenCode events and temporary SRD-only workspaces.
 
 ## Local checks
 
