@@ -1,6 +1,6 @@
 # Foundry AI Agent v0.2.0
 
-**Prepared release notes — not yet tagged or published.** This version brings
+**Release v0.2.0 — published November 26, 2026.** This version brings
 source-grounded D&D 2024 rules answers, a reproducible rules evaluation suite,
 and an intentional **OpenCode V2-only breaking change**. The published v0.1.0
 release remains available independently.

@@ -5,7 +5,7 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
-## [0.2.0] - Unreleased
+## [0.2.0] - November 26, 2026
 
 ### Breaking: OpenCode V2 required
 
