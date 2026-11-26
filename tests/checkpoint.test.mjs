@@ -5,8 +5,9 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { rm } from "node:fs/promises";
 import {
-  advanceState, bootstrapState, emptyState, isUnprocessed,
-  loadState, messageTimestamp, orderedMessages, saveState
+  advanceSenderState, advanceState, bootstrapState, cursorForSender,
+  emptyState, isUnprocessed, isUnprocessedForSender, loadState,
+  messageTimestamp, orderedMessages, saveState
 } from "../lib/checkpoint.mjs";
 
 const message = (id, timestamp) => ({ _id: id, timestamp });
@@ -30,6 +31,19 @@ test("bootstrap skips existing history without losing same-timestamp arrivals", 
   assert.equal(isUnprocessed(advanced, message("older", 10)), false);
   assert.equal(isUnprocessed(advanced, message("future", 21)), true);
   assert.deepEqual(advanceState(advanced, message("future", 21)).seenAtTimestamp, ["future"]);
+});
+
+test("independent sender cursors do not advance one another", () => {
+  const baseline = bootstrapState([message("old", 10)]);
+  const alice = advanceSenderState(baseline, "alice", message("a", 20), { id: "ses_a", last: 1, count: 1 });
+  assert.equal(cursorForSender(alice, "alice").lastTimestamp, 20);
+  assert.equal(cursorForSender(alice, "bob").lastTimestamp, 10);
+  assert.equal(isUnprocessedForSender(alice, "bob", message("b", 15)), true);
+
+  const both = advanceSenderState(alice, "bob", message("b", 15), { id: "ses_b", last: 2, count: 1 });
+  assert.equal(cursorForSender(both, "alice").lastTimestamp, 20);
+  assert.equal(cursorForSender(both, "bob").lastTimestamp, 15);
+  assert.equal(isUnprocessedForSender(both, "alice", message("a", 20)), false);
 });
 
 test("state is stored atomically and can be loaded after restart", async () => {

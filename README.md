@@ -21,6 +21,9 @@ whose access is appropriate for your group.
   24 hours of inactivity or 1,000 messages by default.
 - Saves a local message checkpoint and conversation session IDs so that new
   messages can be resumed after a bridge restart.
+- Processes each player's requests in order, while allowing up to three
+  players to be served concurrently by default. Incoming whispers continue
+  to be discovered while the model is working.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
 - Offers an English/French interactive installer; the runtime can answer in
@@ -142,6 +145,7 @@ The assistant replies in a private chat message.
 | `MAX_REPLY` | `4000` | Maximum reply length |
 | `RESET_MS` | `86400000` | Inactivity timeout for a conversation |
 | `RESET_MSGS` | `1000` | Maximum messages before resetting a conversation |
+| `MAX_CONCURRENT` | `3` | Maximum simultaneous players (1–16) |
 | `STATE_FILE` | `.state/bridge-state.json` | Local durable checkpoint file |
 
 For a locally installed MCP server, an example module setting is:
@@ -159,15 +163,19 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - The service example should be adapted to run as a dedicated, unprivileged
   system user on production servers.
 - On the first start, existing chat messages are treated as history. After
-  that, the bridge resumes new messages from its checkpoint after restarts.
+  that, the bridge resumes new messages from individual per-sender checkpoints.
+  Existing state files from the original global-checkpoint implementation are
+  migrated automatically.
   Keep the `.state/` directory across deployments, and ensure the service
   account can write to it. The state contains message IDs and OpenCode session
   IDs, but not chat content.
 - Delivery is **at least once**, not exactly once: a crash after sending a
   reply but before saving its checkpoint may cause a duplicate response or
   repeated MCP action when restarting.
-- The bridge still polls the full chat history. Tests use mocked Foundry and
-  OpenCode interfaces; live integration should be verified before deployment.
+- The bridge still fetches the full chat history from the MCP server, but
+  filters whispers before sorting and queues work without blocking polling.
+  Tests use mocked Foundry and OpenCode interfaces; live integration should be
+  verified before deployment.
 
 ## Contributing
 
