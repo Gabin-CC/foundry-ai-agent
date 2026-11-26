@@ -2,6 +2,26 @@
   "$schema": "https://opencode.ai/config.json",
   "model": "{env:OPENCODE_MODEL}",
   "instructions": ["AGENTS.md"],
+  "agents": {
+    "foundry-player": {
+      "description": "Player-facing Foundry assistant without raw filesystem or shell tools",
+      "mode": "primary",
+      "permissions": [
+        { "action": "read", "resource": "*", "effect": "deny" },
+        { "action": "glob", "resource": "*", "effect": "deny" },
+        { "action": "grep", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "webfetch", "resource": "*", "effect": "deny" },
+        { "action": "websearch", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "foundry_gm_*", "resource": "*", "effect": "deny" },
+        { "action": "opencode_list_mcp_resources", "resource": "foundry", "effect": "deny" },
+        { "action": "opencode_read_mcp_resource", "resource": "foundry:*", "effect": "deny" },
+        { "action": "execute", "resource": "*", "effect": "deny" }
+      ]
+    }
+  },
   "mcp": {
     "servers": {
       "rules": {

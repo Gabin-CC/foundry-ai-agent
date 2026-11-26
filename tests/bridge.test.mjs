@@ -17,7 +17,8 @@ async function fixture(t) {
 }
 
 function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSenders,
-  clock = () => 5000, resetMsgs = 1000, maxConcurrent = 3, fetchMessages, replyGuard }) {
+  clock = () => 5000, resetMsgs = 1000, maxConcurrent = 3, fetchMessages, replyGuard,
+  getAccessRevision }) {
   return new FoundryMessageBridge({
     stateFile,
     aiId: "AI",
@@ -28,6 +29,7 @@ function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSende
     resetMsgs,
     maxConcurrent,
     replyGuard,
+    getAccessRevision,
     fetchMessages: fetchMessages || (async () => messages),
     ask: asks || (async (prompt, sessionId) => {
       calls.push({ prompt, sessionId });
@@ -44,10 +46,11 @@ test("citation guard receives this turn's tool calls and replaces a reply before
   const bridge = buildBridge({ stateFile, messages, calls,
     asks: async () => ({ text: "<p>Unsupported ruling</p>", sessionID: "ses_rules",
       ruleCalls: [{ name: "rules_search_rules", status: "completed", input: { query: "opportunity attack" } }] }),
-    replyGuard: async ({ question, reply, toolCalls }) => {
+    replyGuard: async ({ question, reply, toolCalls, role }) => {
       assert.equal(question, "Quelle est la règle ?");
       assert.equal(reply, "<p>Unsupported ruling</p>");
       assert.equal(toolCalls[0].input.query, "opportunity attack");
+      assert.equal(role, 2);
       return "<p>Source non vérifiée.</p>";
     }
   });
@@ -57,6 +60,46 @@ test("citation guard receives this turn's tool calls and replaces a reply before
   await bridge.waitForIdle();
   assert.equal(calls.find(call => call.sender)?.html, "<p>Source non vérifiée.</p>");
   assert.equal((await loadState(stateFile)).threads.u1.id, "ses_rules");
+});
+
+test("role downgrade resets V2 conversation so a player cannot reuse GM context", async t => {
+  const stateFile = await fixture(t);
+  const messages = [message("history", 10)];
+  const calls = [];
+  const bridge = buildBridge({ stateFile, messages, calls });
+  await bridge.initialize();
+  bridge.usersById.u1.role = 4;
+  messages.push(message("gm-access", 20));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  assert.equal((await loadState(stateFile)).threads.u1.accessRole, "gm");
+  bridge.usersById.u1.role = 2;
+  messages.push(message("player-access", 30));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  const requests = calls.filter(call => call.prompt);
+  assert.deepEqual(requests.map(call => call.sessionId), [undefined, undefined]);
+  assert.equal((await loadState(stateFile)).threads.u1.accessRole, "player");
+});
+
+test("reclassifying a previously public book as GM-only resets player memory", async t => {
+  const stateFile = await fixture(t);
+  const messages = [message("history", 10)];
+  const calls = [];
+  let revision = "all-books-public";
+  const bridge = buildBridge({ stateFile, messages, calls, getAccessRevision: async () => revision });
+  await bridge.initialize();
+  messages.push(message("before-policy-change", 20));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  revision = "campaign-now-gm-only";
+  messages.push(message("after-policy-change", 30));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  const requests = calls.filter(call => call.prompt);
+  assert.deepEqual(requests.map(call => call.sessionId), [undefined, undefined]);
+  assert.equal((await loadState(stateFile)).threads.u1.accessRevision, "campaign-now-gm-only");
+  assert.equal((await loadState(stateFile)).senderCursors.u1.lastTimestamp, 30);
 });
 
 test("existing history is ignored and new whispers run in chronological order", async t => {
@@ -171,7 +214,7 @@ test("players have separate sessions and each session resets at its message limi
 
   const requests = calls.filter(call => call.prompt);
   assert.deepEqual(requests.map(call => call.sessionId), [undefined, undefined, "ses_one", undefined]);
-  assert.match(requests[1].prompt, /role: GM \(owner\)/);
+  assert.match(requests.find(request => request.prompt.endsWith("\nbob1")).prompt, /role: GM \(owner\)/);
   const saved = await loadState(stateFile);
   assert.equal(saved.threads.u1.count, 1);
   assert.equal(saved.threads.u2.count, 1);

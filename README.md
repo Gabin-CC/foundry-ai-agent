@@ -240,6 +240,18 @@ for details. There is no arbitrary private-PDF size cap; large files may take
 longer to parse and require more resources. Re-index after adding, changing or
 removing books.
 
+### Keep campaign spoilers GM-only
+
+Indexed PDFs have just two categories: **rules for everyone** and **GM
+content** (adventures, campaign plots, hidden encounters). Put the exact
+filenames of books you want players to consult in
+`rules-private/access.json` under `rules_for_all`. **Unlisted private PDFs are
+GM-only by default**; the SRD is always public. The rules MCP filters source
+lists, search results and direct page reads using the sender's Foundry role.
+Changing a classification resets that player's model context, but preserves
+their Foundry chat checkpoint. For an example and mixed-book limitations,
+see [private-book visibility](rules-private/README.md#two-categories-rules-for-everyone--gm-content).
+
 **Privacy:** the books and index stay on the machine, but **relevant excerpts
 from them are sent to the configured AI model provider by OpenCode** when the
 assistant consults them. Do not add books whose license or your privacy
@@ -334,6 +346,7 @@ restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
 | `STATE_FILE` | `.state/bridge-state.json` | Local durable checkpoint file |
 | `RULES_CITATION_MODE` | `enforce` | Validate rule citations before replying; `off` disables the guard |
 | `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Optional custom local rules index path |
+| `RULES_ACCESS_FILE` | `rules-private/access.json` | Private rules-for-all / GM-only book classification |
 
 For a locally installed MCP server, an example module setting is:
 

@@ -30,4 +30,7 @@ test("V2 OpenCode command quotes prompts safely and forwards a V2 session only w
   const resume = opencodeRunCommand({ prompt: "Next", sessionId: "ses_123abc" });
   assert.match(resume, /'--session' 'ses_123abc' 'Next'$/);
   assert.throws(() => opencodeRunCommand({ prompt: "Next", sessionId: "not-a-session" }), /Malformed/);
+  const isolated = opencodeRunCommand({ prompt: "Hello", standalone: true, agent: "foundry-player" });
+  assert.match(isolated, /^'opencode' '--standalone' 'run' '--format' 'json' '--agent' 'foundry-player'/);
+  assert.throws(() => opencodeRunCommand({ prompt: "Hello", agent: "player; echo unsafe" }), /Malformed/);
 });

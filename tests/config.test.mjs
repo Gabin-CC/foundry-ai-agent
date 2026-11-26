@@ -26,6 +26,17 @@ test("the rules MCP server is a local, read-only source separate from Foundry", 
   assert.equal(rules.codemode, false);
 });
 
+test("player agent cannot read campaign files through built-in OpenCode tools", () => {
+  const agent = config.agents["foundry-player"];
+  assert.equal(agent.mode, "primary");
+  for (const action of ["read", "shell", "glob", "grep", "edit", "execute", "webfetch", "websearch", "subagent"]) {
+    assert.ok(agent.permissions.some(p => p.action === action && p.effect === "deny" && p.resource === "*"), action);
+  }
+  assert.ok(agent.permissions.some(p => p.action === "foundry_gm_*" && p.resource === "*" && p.effect === "deny"));
+  assert.ok(agent.permissions.some(p => p.action === "opencode_read_mcp_resource" && p.resource === "foundry:*" && p.effect === "deny"));
+  assert.ok(!agent.permissions.some(p => p.action === "rules_search_rules" && p.effect === "deny"));
+});
+
 test("MCP credentials and model configuration reference documented environment variables", () => {
   for (const name of ["OPENCODE_MODEL", "FOUNDRY_MCP_URL", "FOUNDRY_MCP_AUTH_B64"]) {
     assert.match(envExample, new RegExp(`^${name}=`, "m"));

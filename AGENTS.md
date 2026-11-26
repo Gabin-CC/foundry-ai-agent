@@ -38,6 +38,12 @@ MCP tools connected through a dedicated **Assistant GM** account.
   from Foundry, and **GM decisions**. Do not treat a plausible answer as an
   official rule. If a request is about storytelling rather than mechanics,
   no SRD lookup is needed.
+- The local rules MCP separates **rules for everyone** from **GM-only book
+  content**. For a player, only use the sources returned by their permitted
+  `rules_list_rule_sources` or `rules_search_rules` calls. Do not reveal
+  campaign plots, secrets, upcoming encounters, or spoilers from GM-only books,
+  including from model memory or Foundry documents. If asked, refer them to
+  their GM. GMs and Assistant GMs may consult all indexed sources.
 
 ## Role
 

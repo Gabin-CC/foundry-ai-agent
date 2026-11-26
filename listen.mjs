@@ -9,6 +9,7 @@ import { loadFoundrySession } from "./lib/foundry-module.mjs";
 import { parseOpencodeEvents } from "./lib/opencode-events.mjs";
 import { checkOpencodeVersion, opencodeRunCommand } from "./lib/opencode-cli.mjs";
 import { createRulesReplyGuard } from "./lib/rules-guard.mjs";
+import { accessRole, accessPolicyRevision } from "./lib/rules-access.mjs";
 
 const env = process.env;
 const AI_USER = env.AI_USER || "AI";
@@ -28,6 +29,7 @@ const CHAT_RESYNC_MS = Number(env.CHAT_RESYNC_MS || 120000);
 const CHAT_LOOKBACK_MS = Number(env.CHAT_LOOKBACK_MS || 120000);
 const RULES_CITATION_MODE = env.RULES_CITATION_MODE || "enforce";
 const RULES_INDEX_PATH = env.RULES_INDEX_PATH || join(AGENT_DIR, ".rules", "srd-5.2.1.json");
+const RULES_ACCESS_FILE = env.RULES_ACCESS_FILE || join(AGENT_DIR, "rules-private", "access.json");
 
 const run = promisify(execFile);
 
@@ -40,10 +42,16 @@ console.error(`[agent] verified OpenCode ${info.version} (V2 only)`);
 const FoundrySession = await loadFoundrySession(env.FOUNDRY_MCP_MODULE);
 
 // The OpenCode V2 CLI emits newline-delimited JSON inside this PTY.
-async function askOpencode(prompt, sessionId) {
-  const command = opencodeRunCommand({ binary: OPENCODE, prompt, sessionId });
+async function askOpencode(prompt, sessionId, { role } = {}) {
+  const access = accessRole(role);
+  // V2 normally reuses a shared server whose MCP environment belongs to the
+  // first caller. Use a private server for each request so a player's rules
+  // tool can never inherit an earlier GM's rules access environment.
+  const command = opencodeRunCommand({ binary: OPENCODE, prompt, sessionId,
+    standalone: true, agent: access === "player" ? "foundry-player" : undefined });
   const result = await run("script", ["-q", "-e", "-c", command, "/dev/null"],
-    { cwd: AGENT_DIR, maxBuffer: 16 * 1024 * 1024, timeout: 120000 });
+    { cwd: AGENT_DIR, env: { ...process.env, RULES_ACCESS_ROLE: access,
+      RULES_ACCESS_FILE }, maxBuffer: 16 * 1024 * 1024, timeout: 120000 });
   const raw = String(result.stdout || "").replace(/\x1b\[[0-9;]*m/g, "");
   const parsed = parseOpencodeEvents(raw, sessionId);
   if (!parsed.text || !parsed.sessionID) {
@@ -80,7 +88,9 @@ const bridge = new FoundryMessageBridge({
   maxReply: MAX_REPLY,
   maxConcurrent: MAX_CONCURRENT,
   ask: askOpencode,
-  replyGuard: createRulesReplyGuard({ indexPath: RULES_INDEX_PATH, mode: RULES_CITATION_MODE }),
+  getAccessRevision: () => accessPolicyRevision(RULES_ACCESS_FILE),
+  replyGuard: createRulesReplyGuard({ indexPath: RULES_INDEX_PATH,
+    accessPath: RULES_ACCESS_FILE, mode: RULES_CITATION_MODE }),
   fetchMessages: failedSince => chatReader.fetch(failedSince),
   sendReply: (toId, html) => session.doc("create", "ChatMessage", {
     data: [{ author: aiId, content: String(html).trim(), speaker: { alias: "AI" }, whisper: [toId] }],

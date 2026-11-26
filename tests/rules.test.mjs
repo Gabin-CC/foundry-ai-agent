@@ -66,7 +66,7 @@ test("local MCP server exposes read-only rules search and exact-page verificatio
     command: process.execPath,
     args: [resolve("rules-mcp.mjs")],
     cwd: resolve("."),
-    env: { ...process.env, RULES_INDEX_PATH: path }
+    env: { ...process.env, RULES_INDEX_PATH: path, RULES_ACCESS_ROLE: "gm" }
   });
   const client = new Client({ name: "rules-test", version: "1.0.0" });
   t.after(async () => client.close());
@@ -99,6 +99,40 @@ test("local MCP server exposes read-only rules search and exact-page verificatio
     name: "read_rule_page", arguments: { source: "Players_Handbook_2024.pdf", page: 87 }
   });
   assert.match(JSON.parse(privatePage.content[0].text).text, /Azure Step/);
+});
+
+test("player MCP cannot list, search or read a campaign, including by exact filename", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "foundry-player-rules-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const campaign = "Vecna_Eve_of_Ruin.pdf";
+  const path = join(directory, "index.json");
+  const policyPath = join(directory, "access.json");
+  await writeFile(path, JSON.stringify({ ...index,
+    private_sources: [...index.private_sources, { name: campaign, sha256: "a".repeat(64) }],
+    pages: [...index.pages, { source: campaign, language: "en", page: 13,
+      text: "Secret villain identity and campaign ending." }] }));
+  await writeFile(policyPath, JSON.stringify({ version: 1,
+    rules_for_all: ["Players_Handbook_2024.pdf"] }));
+  const transport = new StdioClientTransport({ command: process.execPath,
+    args: [resolve("rules-mcp.mjs")], cwd: resolve("."),
+    env: { ...process.env, RULES_INDEX_PATH: path, RULES_ACCESS_FILE: policyPath,
+      RULES_ACCESS_ROLE: "player" } });
+  const client = new Client({ name: "player-rules-test", version: "1.0.0" });
+  t.after(async () => client.close());
+  await client.connect(transport);
+  const listed = await client.callTool({ name: "list_rule_sources", arguments: {} });
+  const names = JSON.parse(listed.content[0].text).map(item => item.id);
+  assert.deepEqual(names, ["srd", "Players_Handbook_2024.pdf"]);
+  const search = await client.callTool({ name: "search_rules",
+    arguments: { query: "secret villain identity", source: "all" } });
+  assert.doesNotMatch(search.content[0].text, /villain identity|Vecna_Eve/);
+  const direct = await client.callTool({ name: "read_rule_page",
+    arguments: { source: campaign, page: 13 } });
+  assert.match(direct.content[0].text, /unavailable/i);
+  assert.doesNotMatch(direct.content[0].text, /villain|ending/);
+  const allowed = await client.callTool({ name: "read_rule_page",
+    arguments: { source: "Players_Handbook_2024.pdf", page: 53 } });
+  assert.match(allowed.content[0].text, /Azure Step/);
 });
 
 test("missing SRD corpus fails explicitly, never returning made-up citations", async t => {
