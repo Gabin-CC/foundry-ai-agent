@@ -229,6 +229,14 @@ wording patterns and cannot catch every implicit rules discussion. Review
 important rulings against the cited page. To temporarily restore the earlier
 prompt-only behavior, set `RULES_CITATION_MODE=off` in `.env` and restart.
 
+To measure rule-answer regressions separately, run the **optional offline
+13-case D&D 2024 benchmark** (`npm run eval:rules -- --prompts`, then
+`npm run eval:rules -- --responses /path/to/replies.jsonl`). It checks common
+2014/2024 mistakes, references, and any recorded tool provenance, while
+requiring **human source review** for semantic correctness. It does not invoke
+OpenCode, connect to Foundry or change the live service. See the
+[evaluation guide](docs/RULES_EVALUATION.md).
+
 **Scope:** SRD 5.2.1 contains only part of the 2024 rules. The project does
 not ship or download any commercial books. Additional books are used **only
 when an operator explicitly places their PDFs in the local private folder**.

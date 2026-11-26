@@ -1,0 +1,189 @@
+{
+  "version": 1,
+  "title": "D&D 2024 / SRD 5.2.1 (English) rules evaluation",
+  "source": "srd",
+  "cases": [
+    {
+      "id": "opportunity-attack-reaction",
+      "question": "Selon les règles D&D 2024, quand puis-je faire une attaque d'opportunité et quel type d'action utilise-t-elle ?",
+      "expect": "answer",
+      "reference": { "page": 15, "anchor": "Making an Opportunity Attack" },
+      "gold": "A visible creature leaving your reach triggers an opportunity attack; you use a Reaction for a melee attack just before it leaves.",
+      "checks": [
+        { "id": "reaction", "any": ["reaction"] },
+        { "id": "leaves-reach", "any": ["quitt.{0,35}(?:allonge|portee)", "sort.{0,35}(?:allonge|portee)", "leav.{0,30}reach"] }
+      ],
+      "redFlags": [
+        { "id": "no-reaction-required", "any": ["sans (?:utiliser |depenser )?(?:une? )?reaction", "without (?:using |spending )?a reaction"] }
+      ]
+    },
+    {
+      "id": "disengage-prevents-opportunity",
+      "question": "Un ennemi se désengage puis quitte mon allonge : ai-je une attaque d'opportunité selon D&D 2024 ?",
+      "expect": "answer",
+      "reference": { "page": 15, "anchor": "Avoiding Opportunity Attacks" },
+      "gold": "The Disengage action prevents opportunity attacks caused by the creature's movement for the rest of its turn.",
+      "checks": [
+        { "id": "disengage", "any": ["desengag", "disengage"] },
+        { "id": "no-opportunity", "any": ["(?:pas|aucune|ne|sans).{0,55}(?:attaque d.opportunite|opportunity attack)", "(?:does not|doesn.t|won.t).{0,30}provoke"] }
+      ],
+      "redFlags": [
+        { "id": "still-provokes", "any": ["(?:desengag|disengage).{0,75}(?:provoque|provokes) (?:toujours|still|une attaque)"] }
+      ]
+    },
+    {
+      "id": "bonus-action-limit",
+      "question": "Selon les règles D&D 2024, puis-je utiliser deux actions bonus dans le même tour ? Est-ce que tout le monde en a automatiquement une ?",
+      "expect": "answer",
+      "reference": { "page": 10, "anchor": "Bonus Actions" },
+      "gold": "At most one Bonus Action on your turn, and only if a feature, spell or other rule provides one.",
+      "checks": [
+        { "id": "one-per-turn", "any": ["(?:une seule|qu.une|une unique|seule une).{0,25}action bonus", "one bonus action", "only one bonus"] },
+        { "id": "granted-not-automatic", "any": ["(?:capacite|sort|aptitude|regle|fonctionnalite).{0,65}(?:permet|autorise|accorde)", "(?:seulement|uniquement|que) si.{0,60}(?:permet|autorise|accorde)", "(?:feature|spell|ability).{0,50}(?:allows|grants)"] }
+      ],
+      "redFlags": [
+        { "id": "two-bonus-actions", "any": ["(?:deux|2|two) actions? bonus (?:sont|est|are) (?:possibles|autorisees|allowed)"] }
+      ]
+    },
+    {
+      "id": "critical-hit-dice",
+      "question": "Avec les règles D&D 2024, sur un coup critique, double-t-on aussi le modificateur de dégâts ?",
+      "expect": "answer",
+      "reference": { "page": 16, "anchor": "Critical Hits" },
+      "gold": "Roll the attack's damage dice twice (including other attack dice), but add modifiers only once as normal.",
+      "checks": [
+        { "id": "double-dice", "any": ["(?:des|les) des.{0,25}(?:deux fois|double|doubles)", "(?:lance|lancer|jette|jeter).{0,35}(?:des|deux fois)", "(?:roll|double).{0,35}(?:damage dice|dice twice)"] },
+        { "id": "modifier-once", "any": ["(?:modificateur|modifiers?).{0,45}(?:une seule fois|pas double|non double|normalement|once|not doubled)", "(?:ne double|don't double|do not double).{0,25}(?:modificateur|modifier)"] }
+      ],
+      "redFlags": [
+        { "id": "double-modifier", "any": ["(?:double|doubler) (?:aussi |egalement )?(?:le |les )?modificateur", "(?:le |les )?modificateurs? (?:est|sont) (?:aussi )?double", "(?:you|also|always) double (?:the )?modifier"] }
+      ]
+    },
+    {
+      "id": "resistance-round-down",
+      "question": "Selon les règles D&D 2024, une résistance au feu réduit 15 dégâts de feu à combien ? Deux résistances se cumulent-elles ?",
+      "expect": "answer",
+      "reference": { "page": 17, "anchor": "Resistance and Vulnerability" },
+      "gold": "Resistance halves damage rounding down, so 15 becomes 7; multiple resistances to the same type do not stack.",
+      "checks": [
+        { "id": "seven-damage", "any": ["(?:7|sept|seven).{0,18}(?:degat|damage|point)", "(?:degat|damage).{0,20}(?:7|sept|seven)"] },
+        { "id": "no-stacking", "any": ["(?:ne|pas|non).{0,30}(?:cumul|empil)", "(?:ne se cumulent pas|sans cumul|no stacking|do not stack|don't stack)"] }
+      ],
+      "redFlags": [
+        { "id": "eight-damage", "any": ["(?:subit|inflige|devient|reste|takes|becomes) (?:8|huit|eight).{0,18}(?:degat|damage|point)"] }
+      ]
+    },
+    {
+      "id": "one-spell-slot-per-turn-2024",
+      "question": "D'après D&D 2024, puis-je dépenser un emplacement pour un sort avec mon action puis un deuxième emplacement pour un sort en action bonus lors du même tour ?",
+      "expect": "answer",
+      "reference": { "page": 105, "anchor": "One Spell with a Spell Slot per Turn" },
+      "gold": "A character can expend only one spell slot to cast a spell per turn, regardless of action and Bonus Action casting times.",
+      "checks": [
+        { "id": "one-slot", "any": ["(?:un seul|qu.un|un unique).{0,30}emplacement", "only one spell slot", "one spell slot per turn"] },
+        { "id": "cannot-two-slots", "any": ["(?:ne peux|impossible|interdit|pas possible|non).{0,70}(?:deux|2|second|deuxieme).{0,26}emplacement", "(?:cannot|can.t).{0,45}(?:two|second).{0,20}spell slot", "(?:deux|2).{0,30}emplacement.{0,30}(?:impossible|interdit|pas)"] }
+      ],
+      "redFlags": [
+        { "id": "two-slots-allowed", "any": ["(?:deux|2).{0,25}emplacement.{0,50}(?:autorise|permis|possible)", "two spell slots.{0,30}(?:allowed|permitted)"] }
+      ]
+    },
+    {
+      "id": "unarmed-grapple-save-2024",
+      "question": "Selon D&D 2024, un personnage qui agrippe avec une attaque à mains nues fait-il un test opposé d'Athlétisme comme en 2014 ?",
+      "expect": "answer",
+      "reference": { "page": 190, "anchor": "Unarmed Strike" },
+      "gold": "The target makes a Strength or Dexterity saving throw of its choice against DC 8 + the grappler's Strength modifier + Proficiency Bonus; not a contested Athletics check.",
+      "checks": [
+        { "id": "saving-throw", "any": ["jet de sauvegarde", "saving throw"] },
+        { "id": "strength-or-dexterity", "any": ["force ou dexterite", "strength or dexterity", "force/dexterite", "strength/dexterity"] },
+        { "id": "not-contested", "any": ["(?:pas|non|plus).{0,45}(?:test oppose|athletisme)", "(?:not|no longer).{0,35}(?:contested|athletics)"] }
+      ],
+      "redFlags": [
+        { "id": "2014-contested-check", "any": ["(?:fais|fait|effectue|make).{0,22}(?:un )?(?:test oppose|contested check)", "(?:dois|must|utilise|use).{0,30}(?:athletics versus acrobatics|athletisme contre acrobaties)"] }
+      ]
+    },
+    {
+      "id": "grappled-condition-effects",
+      "question": "What does the Grappled condition do under the D&D 2024 rules?",
+      "expect": "answer",
+      "reference": { "page": 182, "anchor": "Grappled [Condition]" },
+      "gold": "Speed is zero and cannot increase; attack rolls against targets other than the grappler have Disadvantage.",
+      "checks": [
+        { "id": "speed-zero", "any": ["(?:vitesse|speed).{0,14}(?:0|zero|nulle)", "(?:0|zero).{0,12}(?:vitesse|speed)"] },
+        { "id": "disadvantage-others", "any": ["(?:desavantage|disadvantage).{0,65}(?:autres cibles|autre cible|que l.agrippeur|other than the grappler|other targets)", "(?:cibles|targets).{0,40}(?:desavantage|disadvantage)"] }
+      ],
+      "redFlags": [
+        { "id": "grappled-always-incapacitated", "any": ["(?:agrippe|grappled).{0,35}(?:incapacite|incapacitated|restrained)"] }
+      ]
+    },
+    {
+      "id": "hide-fixed-dc-2024",
+      "question": "Pour réussir l'action Se cacher (Hide) en D&D 2024, quel DD de Discrétion faut-il atteindre ?",
+      "expect": "answer",
+      "reference": { "page": 183, "anchor": "Hide [Action]" },
+      "gold": "Hide uses a DC 15 Dexterity (Stealth) check, subject to the Hide action's cover/obscurement and line-of-sight requirements.",
+      "checks": [
+        { "id": "dc-15", "any": ["(?:dd|dc|difficulte).{0,8}15", "15.{0,8}(?:dd|dc)"] },
+        { "id": "stealth", "any": ["discretion", "stealth"] }
+      ],
+      "redFlags": [
+        { "id": "passive-perception-dc", "any": ["(?:dd|dc).{0,25}(?:perception passive|passive perception)"] }
+      ]
+    },
+    {
+      "id": "short-rest-2024",
+      "question": "Selon D&D 2024, combien de temps dure un repos court et que se passe-t-il si le personnage subit des dégâts pendant ce repos ?",
+      "expect": "answer",
+      "reference": { "page": 187, "anchor": "Short Rest" },
+      "gold": "A Short Rest lasts 1 hour; taking damage interrupts the rest, and an interrupted Short Rest grants no benefits.",
+      "checks": [
+        { "id": "one-hour", "any": ["(?:1|une|one).{0,8}(?:heure|hour)"] },
+        { "id": "damage-interrupts", "any": ["(?:degat|damage).{0,55}(?:interromp|interrompt|annul|interrupt|stop)", "(?:interromp|interrompt|interrupt).{0,40}(?:degat|damage)"] }
+      ],
+      "redFlags": [
+        { "id": "damage-no-effect", "any": ["(?:degat|damage).{0,35}(?:sans effet|n.interrompt pas|does not interrupt)"] }
+      ]
+    },
+    {
+      "id": "advantage-disadvantage-cancel",
+      "question": "If I have two sources of Advantage and one of Disadvantage, how do I roll under D&D 2024 rules?",
+      "expect": "answer",
+      "reference": { "page": 8, "anchor": "Advantage and Disadvantage" },
+      "gold": "Any Advantage and Disadvantage cancel, irrespective of how many sources of each exist. Roll one d20.",
+      "checks": [
+        { "id": "cancel", "any": ["(?:s.annulent|s.annule|se neutralisent|cancel|offset)"] },
+        { "id": "one-d20", "any": ["(?:un seul|un|one|single).{0,8}d20", "(?:lance|roll).{0,8}(?:un seul|one|single|1).{0,6}d20"] }
+      ],
+      "redFlags": [
+        { "id": "remaining-advantage", "any": ["(?:reste un avantage|still have advantage|retain advantage)"] }
+      ]
+    },
+    {
+      "id": "close-range-ranged-attack",
+      "question": "Selon les règles D&D 2024, est-ce que mon attaque à distance a un désavantage quand un ennemi valide est à 1,50 m de moi ?",
+      "expect": "answer",
+      "reference": { "page": 15, "anchor": "Ranged Attacks in Close Combat" },
+      "gold": "A ranged attack roll has Disadvantage within 5 feet of an enemy who can see you and isn't Incapacitated.",
+      "checks": [
+        { "id": "disadvantage", "any": ["desavantage", "disadvantage"] },
+        { "id": "enemy-sees-you", "any": ["(?:ennemi|adversaire).{0,45}(?:voit|voir)", "enemy.{0,40}(?:see|sees)"] },
+        { "id": "not-incapacitated", "any": ["(?:pas|non|n.est pas).{0,16}incapacite", "(?:not|isn.t).{0,16}incapacitated"] }
+      ],
+      "redFlags": [
+        { "id": "always-disadvantage", "any": ["(?:a|subit) toujours.{0,18}desavantage", "always (?:suffer|have).{0,20}disadvantage"] }
+      ]
+    },
+    {
+      "id": "unsourced-vecna-ritual",
+      "question": "Selon le SRD 5.2.1 de D&D 2024, quels sont les effets officiels du « rituel de la Couronne Écarlate de Vecna » et à quelle page peut-on les lire ?",
+      "expect": "abstain",
+      "gold": "The named ritual has no supporting rule in the SRD 5.2.1. Do not invent effects or page numbers; clearly state that the indexed SRD cannot verify it.",
+      "checks": [
+        { "id": "honest-uncertainty", "any": ["(?:ne peux|impossible|pas possible).{0,40}verifier", "(?:pas|aucune|introuvable).{0,48}(?:source|reference|regle|rituel)", "(?:n.apparait pas|ne figure pas|n.existe pas).{0,55}(?:srd|source|rituel)", "(?:cannot|can.t|unable to).{0,38}verify", "(?:not found|no (?:matching|verifiable) source)"] }
+      ],
+      "redFlags": [
+        { "id": "invented-ritual-effects", "any": ["(?:rituel|ritual).{0,65}(?:inflige|degats|damage|confere|grants|restaure|restores).{0,35}(?:[0-9]|points|hp)"] }
+      ]
+    }
+  ]
+}
