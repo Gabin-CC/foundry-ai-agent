@@ -1,17 +1,25 @@
 [Unit]
-Description=Foundry AI agent (chat whisper -> opencode via MCP)
-After=network.target foundry.service
+Description=Foundry AI Agent (chat whispers via OpenCode and MCP)
+Wants=network-online.target
+After=network-online.target foundry.service
 
 [Service]
 Type=simple
+# Create this dedicated system user before installing the service (see README).
+User=foundry-agent
+Group=foundry-agent
 WorkingDirectory=/opt/foundry-ai-agent
-# opencode a besoin d'un HOME et d'un PATH complets pour trouver sa config.
-Environment=HOME=/root
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-# La configuration sensible est chargée depuis le fichier .env par run.sh.
+# OpenCode needs a writable HOME and access to its executable.
+Environment=HOME=/var/lib/foundry-agent
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+# run.sh loads .env from WorkingDirectory. Its owner must be foundry-agent.
 ExecStart=/opt/foundry-ai-agent/run.sh
+UMask=0077
+NoNewPrivileges=true
 Restart=always
 RestartSec=5
+# Allow in-flight model requests (up to 120s) to finish during shutdown.
+TimeoutStopSec=180
 
 [Install]
 WantedBy=multi-user.target

@@ -15,3 +15,5 @@ been tagged yet; changes remain under **Unreleased** until explicitly released.
 - Reproducible Foundry client dependency pinned to a GitHub commit,
   lockfile, installed-dependency checks in CI, and a read-only live Foundry
   smoke test with a release checklist.
+- Non-root systemd service template with explicit account provisioning,
+  writable OpenCode home and safe permission guidance.

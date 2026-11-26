@@ -96,15 +96,35 @@ printf 'AI:mot-de-passe' | base64
 ```
 
 Un exemple de service systemd est fourni dans
-`foundry-ai-agent.service`. Adapte les chemins et l'utilisateur système
-avant de l'activer sur un serveur de production :
+`foundry-ai-agent.service`. Il fonctionne sous un compte système non privilégié
+`foundry-agent` plutôt que sous root. Si l'agent est installé dans
+`/opt/foundry-ai-agent`, crée ce compte et autorise l'accès à la configuration
+et aux fichiers de reprise :
 
 ```bash
-sudo cp foundry-ai-agent.service /etc/systemd/system/
+sudo groupadd --system foundry-agent
+sudo useradd --system --gid foundry-agent --home-dir /var/lib/foundry-agent --create-home --shell /usr/sbin/nologin foundry-agent
+sudo install -d -m 700 -o foundry-agent -g foundry-agent /opt/foundry-ai-agent/.state
+sudo chown foundry-agent:foundry-agent /opt/foundry-ai-agent/.env
+sudo chown -R foundry-agent:foundry-agent /opt/foundry-ai-agent/.state
+sudo chmod 600 /opt/foundry-ai-agent/.env
+sudo install -m 644 foundry-ai-agent.service /etc/systemd/system/foundry-ai-agent.service
 sudo systemctl daemon-reload
 sudo systemctl enable --now foundry-ai-agent
 journalctl -u foundry-ai-agent -f
 ```
+
+La création du compte ne se fait qu'une fois ; ignore ces commandes s'il
+existe déjà. Vérifie qu'OpenCode est disponible dans le `PATH` du service
+(ou renseigne le chemin absolu dans `OPENCODE_BIN`) et que ce compte peut
+écrire dans `/var/lib/foundry-agent`. Adapte les chemins si nécessaire.
+**Si ton service actuel fonctionne sous root, ne remplace pas son unité avant
+d'avoir créé ce compte et adapté les droits.** La fusion du code seule ne
+modifie pas le service déjà installé. Pense aussi à sauvegarder ou migrer les
+données de session OpenCode stockées dans le répertoire personnel de root :
+sinon, les identifiants de session des joueurs peuvent devenir introuvables.
+Il n'est pas nécessaire de changer de compte pour simplement mettre le code
+à jour.
 
 Dans Foundry, adresse un chuchotement au compte `AI` :
 
@@ -174,7 +194,8 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Donne au compte Foundry uniquement les droits nécessaires à ton groupe.
 - Les consignes de rôle de `AGENTS.md` ne sont pas un contrôle des permissions
   au niveau des outils MCP.
-- Le service systemd doit être adapté à un utilisateur non privilégié.
+- L'exemple systemd utilise un compte non privilégié. `.env`, `.state/` et
+  le répertoire OpenCode doivent être accessibles à ce compte.
 - Au premier lancement, les messages déjà présents sont considérés comme
   historiques. Ensuite, la reprise s'effectue à partir du dernier message
   traité **pour chaque joueur**. Les anciens fichiers d'état sont repris

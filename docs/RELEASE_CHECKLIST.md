@@ -17,6 +17,11 @@ server have different responsibilities; verify both on a real installation.
       Run `npm run smoke:foundry` with Foundry running. It must connect and
       read users and chat history without posting anything.
 - [ ] Confirm that the OpenCode executable and Linux `script` utility exist.
+- [ ] If running under systemd, provision the unprivileged `foundry-agent`
+      user and grant it read access to `.env`, write access to `.state/`, and
+      a writable OpenCode home. Avoid switching an active root-based unit
+      without migrating its state, OpenCode configuration **and OpenCode
+      session data** (stored under the previous user's home).
 
 ## Live integration
 
