@@ -5,6 +5,13 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
+- Separate indexed books into **rules for everyone** and **GM-only content**,
+  with private PDFs hidden from players until their filenames are explicitly
+  shared in `rules-private/access.json`. Filter the local MCP source list,
+  searches, direct page reads and citation verification; reset player model
+  context when access changes. Each OpenCode request runs standalone to avoid
+  inheriting another role's MCP environment.
+
 ## [0.2.0] - November 26, 2026
 
 ### Breaking: OpenCode V2 required

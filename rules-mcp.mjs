@@ -5,8 +5,11 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
 import { listRuleSources, loadRules, readRulePage, searchRules } from "./lib/rules.mjs";
+import { loadAccessPolicy, parseRulesAccessRole, visibleRulesIndex } from "./lib/rules-access.mjs";
 
 const indexPath = process.env.RULES_INDEX_PATH || join(process.cwd(), ".rules", "srd-5.2.1.json");
+const accessPath = process.env.RULES_ACCESS_FILE || join(process.cwd(), "rules-private", "access.json");
+const role = parseRulesAccessRole(process.env.RULES_ACCESS_ROLE);
 let cache;
 
 async function index() {
@@ -14,6 +17,12 @@ async function index() {
   // process is running and a subsequent tool call can recover immediately.
   if (!cache) cache = await loadRules(indexPath);
   return cache;
+}
+
+async function permittedIndex() {
+  // Re-read the policy so an operator can fix a missing/misclassified book
+  // without exposing every indexed PDF or rebuilding the search corpus.
+  return visibleRulesIndex(await index(), await loadAccessPolicy(accessPath), role);
 }
 
 const server = new McpServer({ name: "dnd-2024-rules", version: "0.1.0" });
@@ -27,7 +36,7 @@ server.registerTool("list_rule_sources", {
   inputSchema: {},
   annotations: { readOnlyHint: true, openWorldHint: false }
 }, async () => {
-  try { return { content: [{ type: "text", text: JSON.stringify(listRuleSources(await index())) }] }; }
+  try { return { content: [{ type: "text", text: JSON.stringify(listRuleSources(await permittedIndex())) }] }; }
   catch (error) { return errorResult(error); }
 });
 
@@ -41,7 +50,7 @@ server.registerTool("search_rules", {
   annotations: { readOnlyHint: true, openWorldHint: false }
 }, async ({ query, source, limit }) => {
   try {
-    const matches = searchRules(await index(), query, { source, limit });
+    const matches = searchRules(await permittedIndex(), query, { source, limit });
     return { content: [{ type: "text", text: matches.length
       ? JSON.stringify(matches)
       : "No matching passage in the indexed sources. This does NOT mean the rule does not exist; do not invent an answer or citation." }] };
@@ -54,7 +63,7 @@ server.registerTool("read_rule_page", {
   annotations: { readOnlyHint: true, openWorldHint: false }
 }, async ({ page, source }) => {
   try {
-    const result = readRulePage(await index(), page, source);
+    const result = readRulePage(await permittedIndex(), page, source);
     return { content: [{ type: "text", text: result ? JSON.stringify(result)
       : "Page unavailable for that source in the rules index; do not cite it." }] };
   } catch (error) { return errorResult(error); }

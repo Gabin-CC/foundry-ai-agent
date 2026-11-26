@@ -94,6 +94,28 @@ test("the deployed guard substitutes a cautious response for unsupported citatio
   assert.equal(await off({ question, reply: "<p>Sans source</p>" }), "<p>Sans source</p>");
 });
 
+test("citation guard cannot approve GM-only campaign evidence for a player", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "foundry-secret-citation-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const campaign = "Vecna_Eve_of_Ruin.pdf";
+  const indexPath = join(directory, "index.json");
+  const accessPath = join(directory, "access.json");
+  await writeFile(indexPath, JSON.stringify({ ...index,
+    private_sources: [...index.private_sources, { name: campaign, sha256: "b".repeat(64) }],
+    pages: [...index.pages, { source: campaign, language: "en", page: 44,
+      text: "Secret campaign resolution, available to the GM." }] }));
+  await writeFile(accessPath, JSON.stringify({ version: 1, rules_for_all: [book] }));
+  const guard = createRulesReplyGuard({ indexPath, accessPath, logger: { error() {} } });
+  const question = "Quelle est la règle de Vecna ?";
+  const call = { name: "rules_read_rule_page", status: "completed",
+    input: { source: campaign, page: 44 } };
+  const reply = `<p>${campaign}, PDF p. 44</p>`;
+  assert.match(await guard({ question, reply, toolCalls: [call], role: 2 }), /Je ne peux pas vérifier/);
+  assert.equal(await guard({ question, reply, toolCalls: [call], role: 4 }), reply);
+  const publicRule = `<p>${book}, PDF p. 87</p>`;
+  assert.equal(await guard({ question, reply: publicRule, toolCalls: [privateCall], role: 2 }), publicRule);
+});
+
 test("an absent rules index fails closed for explicit rules questions only", async t => {
   const directory = await mkdtemp(join(tmpdir(), "foundry-no-index-"));
   t.after(() => rm(directory, { recursive: true, force: true }));

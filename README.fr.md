@@ -216,6 +216,20 @@ d'espace disque et de temps d'indexation.
 L'agent ne peut pas certifier automatiquement qu'un PDF ajouté correspond
 réellement aux règles 2024 ; n'ajoute ni règles 2014 ni documents maison.
 
+### Éviter les spoilers des campagnes
+
+Deux catégories simples : **règles pour tous** et **contenu MJ** (campagnes,
+intrigues, secrets, rencontres). Les PDF privés sont **réservés au MJ par
+défaut**. Pour rendre un livre accessible aux joueurs, indique son nom de
+fichier exact dans `rules-private/access.json`, dans la liste `rules_for_all`.
+Le SRD reste toujours consultable par tous. Le MCP filtre la liste des livres,
+les recherches et la lecture directe des pages selon le rôle Foundry.
+
+Une modification de catégorie réinitialise le contexte IA du joueur pour
+éviter de réutiliser d'anciens spoilers, mais conserve son point de reprise du
+chat Foundry. Pas besoin de reconstruire l'index pour changer le classement.
+Voir l'[exemple de configuration](rules-private/README.md#two-categories-rules-for-everyone--gm-content).
+
 **Confidentialité importante :** les PDF restent sur le serveur, mais les
 **extraits retrouvés sont transmis par OpenCode à ton fournisseur IA** pour
 générer les réponses. Assure-toi d'avoir le droit et de souhaiter cet usage.
@@ -305,6 +319,7 @@ Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
 | `STATE_FILE` | `.state/bridge-state.json` | Fichier local de reprise |
 | `RULES_CITATION_MODE` | `enforce` | Vérification des citations avant réponse ; `off` pour désactiver |
 | `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Chemin facultatif d'un index local |
+| `RULES_ACCESS_FILE` | `rules-private/access.json` | Classement des livres : règles pour tous / contenu réservé au MJ |
 
 Exemple pour un module MCP installé localement :
 
