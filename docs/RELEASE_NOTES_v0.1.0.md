@@ -1,8 +1,7 @@
-# Foundry AI Agent v0.1.0 — release candidate
+# Foundry AI Agent v0.1.0
 
-These notes are ready to adapt for the first GitHub release **after** the
-remaining live checks. No tag, public repository, or GitHub release is implied
-by this file.
+The first stable GitHub release of Foundry AI Agent, published on
+November 26, 2026. The source is available from the `v0.1.0` Git tag.
 
 ## What it does
 
@@ -69,12 +68,17 @@ On the maintainer's Foundry server (November 26, 2026), a whisper received a
 private HTML reply in four seconds, its prior per-player OpenCode session was
 reused, and the agent logged `verified server-side chat timestamp filtering`
 with the updated MCP server. This is a deployment observation, not a latency
-guarantee for every installation. A separate read-only smoke check is still
-required on any new installation before publication.
+  guarantee for every installation. Run the separate read-only smoke check
+  against your own Foundry server before using the agent in production.
 
-## Publication gate
+## Release verification
 
-Before tagging `v0.1.0`, verify the complete
-[release checklist](RELEASE_CHECKLIST.md), perform a content-and-history secret
-scan, confirm the live whisper path, and explicitly approve repository
-visibility and release publication.
+The `v0.1.0` tag points to the released `main` commit, and GitHub Actions
+passed on Node.js 20 and 22. The project was installed and tested from a clean
+tag checkout (37 tests passing). The reachable Git history was scanned for
+secrets; one hit was confirmed to be the documented example credential, not a
+real secret.
+
+For future releases, use the
+[release checklist](https://github.com/Gabin-CC/foundry-ai-agent/blob/v0.1.0/docs/RELEASE_CHECKLIST.md)
+and verify the live whisper path on the target Foundry instance.
