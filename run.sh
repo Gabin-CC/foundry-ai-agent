@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Lance le pont chat Foundry -> opencode (agent IA MJ public).
-# Toute la configuration passe par l'environnement (voir .env.example).
+# Start the Foundry chat -> OpenCode bridge.
+# Configuration is supplied through environment variables (see .env.example).
 set -euo pipefail
 cd "$(dirname "$0")"
 
-# Charge .env s'il existe (optionnel en production, pratique en dev).
+# Source .env if present (useful for local development).
 if [ -f .env ]; then
   set -a
   # shellcheck disable=SC1091
@@ -12,7 +12,7 @@ if [ -f .env ]; then
   set +a
 fi
 
-: "${AI_PASSWORD:?définir AI_PASSWORD (mot de passe du compte Foundry AI)}"
+: "${AI_PASSWORD:?set AI_PASSWORD (password for the dedicated Foundry account)}"
 export AI_USER="${AI_USER:-AI}"
 export ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 export ALLOWED_SENDERS="${ALLOWED_SENDERS:-}"

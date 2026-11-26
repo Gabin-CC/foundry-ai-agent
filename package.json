@@ -1,7 +1,7 @@
 {
   "name": "foundry-ai-agent",
   "version": "0.1.0",
-  "description": "Pont chat Foundry VTT -> opencode : un agent IA (assistant MJ) qui répond aux chuchotements via MCP.",
+  "description": "Foundry VTT chat-to-OpenCode bridge: an AI assistant that answers whispers and accesses Foundry through MCP.",
   "type": "module",
   "private": true,
   "license": "MIT",
