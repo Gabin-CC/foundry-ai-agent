@@ -19,10 +19,13 @@ evaluation suite makes that distinction visible.
   semantic correctness. Correct answers phrased unusually may fail; plausible
   but wrong answers may pass. A human must compare the whole response with
   the source and record a separate review verdict.
-- This tool **does not invoke a model, OpenCode, any MCP server or Foundry**.
-  It never sends messages, edits game state, or reads `.env`, `.state/` or
-  commercial PDF files. The **existing** local `.rules/` SRD index is read
-  only for source/page validation. No change to the running service is needed.
+- The original **offline replay** (`eval:rules`) does not invoke a model,
+  OpenCode, any MCP server or Foundry. The separate **opt-in live model
+  runner** (`eval:rules:live`) uses OpenCode with a temporary, SRD-only rules
+  MCP. Neither command contacts Foundry, posts messages, modifies game state,
+  loads `.env` or `.state/`, or changes the running service. The original
+  `.rules/` index is only read; private PDF pages are excluded from the
+  temporary index before OpenCode starts.
 
 ## Run an evaluation
 
@@ -38,6 +41,67 @@ SRD-only instruction. Feed these prompts to a **separately isolated** model
 session with **only** the local SRD rules MCP available (never the production
 Foundry MCP). Do not use the live bridge as an unattended evaluation runner.
 
+### Automated real-model collection (explicit opt-in)
+
+PR #14 adds a separate runner that calls the **OpenRouter model specified by
+you** through OpenCode. It is **not** invoked by `npm test`, `npm run
+eval:rules`, CI, installation, or the production service. Check the setup
+without credentials or network calls first:
+
+```bash
+npm run eval:rules:live -- --dry-run --model openrouter/baidu/ernie-5.5-flash-preview:free
+```
+
+Use the same model ID as your deployed `OPENCODE_MODEL` to compare model
+behavior. The example above is a model identifier, **not** a guarantee of
+availability, tool support or free pricing. OpenCode must be installed on
+the evaluation host. To actually contact the provider, export
+`OPENROUTER_API_KEY` in the shell **explicitly** (the runner never reads the
+production `.env`) and choose a new output path:
+
+```bash
+# Example: type the key without echoing it into shell history
+read -rs OPENROUTER_API_KEY && export OPENROUTER_API_KEY
+
+# First, try one question before running the full set
+npm run eval:rules:live -- --execute --model openrouter/baidu/ernie-5.5-flash-preview:free \
+  --limit 1 --output .rules/model-smoke.jsonl
+
+# After confirming the model and tool connection, run all 13 cases
+npm run eval:rules:live -- --execute --model openrouter/baidu/ernie-5.5-flash-preview:free \
+  --output .rules/model-all.jsonl
+
+# Grade the captured replies (still requires manual review)
+npm run eval:rules -- --responses .rules/model-all.jsonl --json
+```
+
+The live runner:
+
+1. Makes a fresh **temporary work directory** and copies only the official
+   English SRD pages from the local index. It never passes the private
+   PDF list, text or production configuration to OpenCode.
+2. Creates an **SRD-only OpenCode config and agent**. The three read-only
+   rules tools are explicitly permitted; other tools, providers, MCP
+   servers, plugins, skills and web search are denied by OpenCode policies.
+3. Passes an allowlisted environment containing the provider key but **no
+   Foundry credentials, account data or original OpenCode session state**.
+   Every question starts a new OpenCode session.
+4. Captures the actual HTML answer and completed rules-tool inputs/status,
+   **not** entire MCP excerpts, and writes them as JSON Lines. An unexpected
+   tool call aborts the run; earlier completed cases remain on disk.
+
+Provider calls may cost money and send the official SRD passages and
+benchmark prompts to your chosen provider. Output files contain model
+transcripts; use a path inside gitignored `.rules/` or outside the repo and
+keep them private. An existing output file is never overwritten. An
+incomplete run leaves a partial file, which is **not** a passing result.
+
+This is **application-level isolation** using OpenCode configuration,
+permissions and a clean environment, **not an OS/container network sandbox**.
+For additional assurance, run under a separate low-privilege account without
+routes or credentials to Foundry. A system administrator's machine-wide
+OpenCode configuration may take precedence; inspect it before evaluating.
+
 Save the model's actual HTML responses to an untracked JSON Lines file (one
 JSON object per line). The following is an **illustrative format**, not a
 claimed model result:
@@ -49,7 +113,10 @@ claimed model result:
 The optional `toolCalls` field must contain **actual completed calls from the
 same model turn**, not calls copied from a different prompt or fabricated for
 scoring. Without that trace, citation provenance is marked `not-provided`;
-the answer cannot receive a fully reviewed-correct status.
+the answer cannot receive a fully reviewed-correct status. **Even a cautious
+refusal must have a successful SRD search** before it counts as a reviewed
+correct answer; a search shows that a lookup was attempted, not that the
+ritual is proved nonexistent everywhere.
 
 For each reply, compare the full model answer to `gold` and the cited PDF page
 in `eval/rules-2024-srd.json`. Then add a **human** review:

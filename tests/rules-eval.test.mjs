@@ -40,7 +40,10 @@ const knownCorrect = [
   sample("short-rest-2024", `Un repos court dure une heure ; subir des dégâts interrompt ce repos. ${cite(187)}`, { toolCalls: trace(187), review }),
   sample("advantage-disadvantage-cancel", `Advantage and Disadvantage cancel; roll one d20. ${cite(8)}`, { toolCalls: trace(8), review }),
   sample("close-range-ranged-attack", `Désavantage si un ennemi qui vous voit est proche et n'est pas incapacite. ${cite(15)}`, { toolCalls: trace(15), review }),
-  sample("unsourced-vecna-ritual", "Je ne peux pas vérifier ce rituel dans le SRD 5.2.1. Aucune source vérifiable ne donne ses effets.", { review })
+  sample("unsourced-vecna-ritual", "Je ne peux pas vérifier ce rituel dans le SRD 5.2.1. Aucune source vérifiable ne donne ses effets.", {
+    toolCalls: [{ name: "rules_search_rules", status: "completed",
+      input: { source: "srd", query: "scarlet crown Vecna ritual" } }], review
+  })
 ];
 
 test("pinned SRD-only gold cases have distinct IDs, headings, and validated patterns", () => {
@@ -56,7 +59,7 @@ test("synthetic reviewed-correct answers cover all 13 rubrics and exact consulte
   assert.equal(report.summary.reviewedCorrect, 13);
   assert.equal(report.summary.smokePassed, 13);
   assert.equal(report.summary.goldCitations, 12);
-  assert.equal(report.summary.provenanceVerified, 12);
+  assert.equal(report.summary.provenanceVerified, 13);
   assert.equal(report.summary.human.accuracy, 1);
 });
 
@@ -104,6 +107,10 @@ test("an honest refusal passes without citation; fabricated ritual page fails", 
   }, index);
   assert.equal(bad.citation, "unexpected");
   assert.equal(bad.status, "failed");
+  assert.equal(evaluateRuleCase(caseById[base.id], { ...base, toolCalls: [] }, index).evidence,
+    "no-completed-search");
+  assert.equal(evaluateRuleCase(caseById[base.id], { ...base, toolCalls: undefined }, index).status,
+    "needs-evidence");
 });
 
 test("pattern success without a tool trace or human review is not semantic proof", () => {

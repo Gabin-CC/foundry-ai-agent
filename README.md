@@ -237,6 +237,15 @@ requiring **human source review** for semantic correctness. It does not invoke
 OpenCode, connect to Foundry or change the live service. See the
 [evaluation guide](docs/RULES_EVALUATION.md).
 
+An **explicit live-model evaluation** is also available: run
+`npm run eval:rules:live -- --dry-run --model openrouter/provider/model`
+to inspect its configuration, then use `--execute --output .rules/results.jsonl`
+with an explicitly exported `OPENROUTER_API_KEY` to collect real OpenCode
+answers. The runner uses a temporary **SRD-only** MCP and denies all other
+OpenCode tools; it never loads the production Foundry configuration or private
+rulebooks. Provider calls can cost money, and human source review is still
+required. [Full instructions](docs/RULES_EVALUATION.md).
+
 **Scope:** SRD 5.2.1 contains only part of the 2024 rules. The project does
 not ship or download any commercial books. Additional books are used **only
 when an operator explicitly places their PDFs in the local private folder**.
