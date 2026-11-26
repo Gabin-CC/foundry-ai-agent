@@ -1,11 +1,11 @@
 # Changelog
 
-Notable changes to Foundry AI Agent are recorded here. Version 0.1.0 is a
-**release candidate**, not a published release or Git tag yet.
+Notable changes to Foundry AI Agent are recorded here. Version 0.1.0 is the
+first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
-## [0.1.0] - Release candidate (not tagged)
+## [0.1.0] - 2026-11-26
 
 - English project documentation and French translation, bilingual installer,
   contribution guidelines and code of conduct.
