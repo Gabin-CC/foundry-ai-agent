@@ -1,0 +1,17 @@
+[Unit]
+Description=Foundry AI agent (chat whisper -> opencode via MCP)
+After=network.target foundry.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/foundry-ai-agent
+# opencode a besoin d'un HOME et d'un PATH complets pour trouver sa config.
+Environment=HOME=/root
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+# La configuration sensible est chargée depuis le fichier .env par run.sh.
+ExecStart=/opt/foundry-ai-agent/run.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

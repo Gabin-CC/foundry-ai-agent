@@ -1,0 +1,20 @@
+{
+  "name": "foundry-ai-agent",
+  "version": "0.1.0",
+  "description": "Pont chat Foundry VTT -> opencode : un agent IA (assistant MJ) qui répond aux chuchotements via MCP.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "bin": {
+    "foundry-ai-agent": "listen.mjs"
+  },
+  "scripts": {
+    "start": "node listen.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@foundry-vtt-mcp/server": "*"
+  }
+}

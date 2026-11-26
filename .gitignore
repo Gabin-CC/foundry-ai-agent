@@ -1,0 +1,11 @@
+# Secrets — ne jamais versionner
+.env
+.or_key
+*.key
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Divers
+.DS_Store
