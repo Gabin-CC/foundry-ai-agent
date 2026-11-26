@@ -6,6 +6,8 @@ import { promisify } from "node:util";
 import { FoundryMessageBridge } from "./lib/bridge.mjs";
 import { ChatHistoryReader } from "./lib/chat-reader.mjs";
 import { loadFoundrySession } from "./lib/foundry-module.mjs";
+import { parseOpencodeEvents } from "./lib/opencode-events.mjs";
+import { createRulesReplyGuard } from "./lib/rules-guard.mjs";
 
 // Foundry client from the pinned MCP source, or a configured local module.
 const FoundrySession = await loadFoundrySession(process.env.FOUNDRY_MCP_MODULE);
@@ -26,6 +28,8 @@ const MAX_CONCURRENT = Number(env.MAX_CONCURRENT || 3);
 const CHAT_FILTER_MODE = env.CHAT_FILTER_MODE || "auto";
 const CHAT_RESYNC_MS = Number(env.CHAT_RESYNC_MS || 120000);
 const CHAT_LOOKBACK_MS = Number(env.CHAT_LOOKBACK_MS || 120000);
+const RULES_CITATION_MODE = env.RULES_CITATION_MODE || "enforce";
+const RULES_INDEX_PATH = env.RULES_INDEX_PATH || join(AGENT_DIR, ".rules", "srd-5.2.1.json");
 
 const run = promisify(execFile);
 
@@ -37,17 +41,7 @@ async function askOpencode(prompt, sessionId) {
   const result = await run("script", ["-q", "-e", "-c", command, "/dev/null"],
     { cwd: AGENT_DIR, maxBuffer: 16 * 1024 * 1024, timeout: 120000 });
   const raw = String(result.stdout || "").replace(/\x1b\[[0-9;]*m/g, "");
-  let id = sessionId, text = "";
-  for (const line of raw.split("\n")) {
-    const value = line.trim();
-    if (!value.startsWith("{")) continue;
-    try {
-      const event = JSON.parse(value);
-      if (event.sessionID && !id) id = event.sessionID;
-      if (event.type === "text" && event.part?.text) text += event.part.text;
-    } catch { /* Ignore non-JSON terminal output. */ }
-  }
-  return { sessionID: id, text: text.trim() };
+  return parseOpencodeEvents(raw, sessionId);
 }
 
 const session = await FoundrySession.login(AI_USER, AI_PASS, { adminPassword: ADMIN_PASS });
@@ -78,6 +72,7 @@ const bridge = new FoundryMessageBridge({
   maxReply: MAX_REPLY,
   maxConcurrent: MAX_CONCURRENT,
   ask: askOpencode,
+  replyGuard: createRulesReplyGuard({ indexPath: RULES_INDEX_PATH, mode: RULES_CITATION_MODE }),
   fetchMessages: failedSince => chatReader.fetch(failedSince),
   sendReply: (toId, html) => session.doc("create", "ChatMessage", {
     data: [{ author: aiId, content: String(html).trim(), speaker: { alias: "AI" }, whisper: [toId] }],

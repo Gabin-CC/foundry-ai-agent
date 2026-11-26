@@ -190,8 +190,16 @@ générer les réponses. Assure-toi d'avoir le droit et de souhaiter cet usage.
 **Limites :** le SRD ne contient **pas toutes** les règles des livres achetés.
 Le dépôt ne distribue aucun livre commercial. Si une réponse n'est pas
 vérifiable dans les sources disponibles, l'IA doit l'indiquer plutôt que
-l'inventer. Ses consignes ne garantissent pas à elles seules l'exactitude :
-vérifie une citation lors d'un arbitrage important.
+l'inventer. Le pont vérifie désormais que les pages citées correspondent à
+des recherches MCP effectuées **pour cette réponse** et existent dans l'index.
+Une réponse à une question explicite de règles sans citation valide est
+remplacée par un message prudent. Sans index, ces questions ne reçoivent pas
+de règle inventée ; les jets de dés et autres demandes restent disponibles.
+
+Il ne s'agit **pas d'une preuve de bonne interprétation** : une page peut
+être authentique mais mal comprise, et la détection des questions de règles
+est volontairement prudente. Vérifie les arbitrages importants. Au besoin,
+`RULES_CITATION_MODE=off` dans `.env` désactive ce contrôle après redémarrage.
 
 Attribution du SRD 5.2.1 (CC-BY-4.0) :
 
@@ -244,6 +252,8 @@ Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
 | `CHAT_RESYNC_MS` | `120000` | Intervalle entre deux relectures complètes (ms) |
 | `CHAT_LOOKBACK_MS` | `120000` | Chevauchement des requêtes incrémentales (ms) |
 | `STATE_FILE` | `.state/bridge-state.json` | Fichier local de reprise |
+| `RULES_CITATION_MODE` | `enforce` | Vérification des citations avant réponse ; `off` pour désactiver |
+| `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Chemin facultatif d'un index local |
 
 Exemple pour un module MCP installé localement :
 
@@ -257,8 +267,8 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Donne au compte Foundry uniquement les droits nécessaires à ton groupe.
 - Les consignes de rôle de `AGENTS.md` ne sont pas un contrôle des permissions
   au niveau des outils MCP.
-- Les citations de règles dépendent aussi du bon usage des outils par l'IA :
-  une preuve absente ou insuffisante ne permet pas d'affirmer une règle.
+- Le contrôle vérifie la provenance des citations et l'existence des pages,
+  mais pas la justesse de l'interprétation d'une règle.
 - L'exemple systemd utilise un compte non privilégié. `.env`, `.state/` et
   le répertoire OpenCode doivent être accessibles à ce compte.
 - Au premier lancement, les messages déjà présents sont considérés comme
