@@ -205,7 +205,9 @@ Only the instruction file in `rules-private/` is committed; PDFs and their
 indexed text are excluded from Git. The tool cannot independently verify
 whether a user-provided PDF is an official 2024 book, so add only sources
 appropriate to your game. See [private-rulebook instructions](rules-private/README.md)
-for limits and details. Re-index after adding, changing or removing books.
+for details. There is no arbitrary private-PDF size cap; large files may take
+longer to parse and require more resources. Re-index after adding, changing or
+removing books.
 
 **Privacy:** the books and index stay on the machine, but **relevant excerpts
 from them are sent to the configured AI model provider by OpenCode** when the

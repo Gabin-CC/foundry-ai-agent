@@ -3,11 +3,11 @@
 // Requires Poppler's pdftotext. Does not change Foundry or OpenCode sessions.
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { mkdir, open, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { SOURCE, SOURCE_SHA256, validPdfName, validateIndex } from "../lib/rules.mjs";
+import { fingerprintPrivatePdf } from "../lib/private-pdf.mjs";
 
 const run = promisify(execFile);
 const args = process.argv.slice(2);
@@ -21,11 +21,11 @@ const privateDirectory = join(process.cwd(), "rules-private");
 await mkdir(directory, { recursive: true, mode: 0o700 });
 const pages = [];
 
-async function extractPages(input, source) {
+async function extractPages(input, source, timeout = 120000) {
   // -raw keeps the original reading order of the two-column SRD pages.
   // -layout can interleave the two columns and produce misleading passages.
   const { stdout } = await run("pdftotext", ["-raw", "-enc", "UTF-8", input, "-"], {
-    encoding: "utf8", maxBuffer: 80 * 1024 * 1024, timeout: 120000
+    encoding: "utf8", maxBuffer: 80 * 1024 * 1024, timeout
   });
   const rawPages = stdout.split("\f");
   let count = 0;
@@ -87,21 +87,9 @@ for (const entry of entries) {
     throw new Error(`Invalid private PDF file: ${entry.name} (regular files only)`);
   }
   const input = join(privateDirectory, entry.name);
-  if ((await stat(input)).size > 250_000_000) {
-    throw new Error(`${entry.name} is larger than 250 MB`);
-  }
-  const file = await open(input, "r");
-  const header = Buffer.alloc(5);
-  try { await file.read(header, 0, 5, 0); }
-  finally { await file.close(); }
-  if (header.toString() !== "%PDF-") {
-    throw new Error(`${entry.name} does not look like a PDF`);
-  }
-  // Hash in a stream: purchased books often contain high-resolution artwork.
-  const hash = createHash("sha256");
-  for await (const chunk of createReadStream(input)) hash.update(chunk);
-  const checksum = hash.digest("hex");
-  const count = await extractPages(input, entry.name);
+  const checksum = await fingerprintPrivatePdf(input);
+  // Large illustrated books may take longer than the official SRD to parse.
+  const count = await extractPages(input, entry.name, 600000);
   private_sources.push({ name: entry.name, sha256: checksum });
   console.log(`Indexed ${count} pages from private PDF: ${entry.name}`);
 }
