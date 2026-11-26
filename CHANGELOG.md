@@ -5,6 +5,10 @@ first stable GitHub release, published on November 26, 2026.
 
 ## [Unreleased]
 
+- Rename the combined SRD/private-book corpus from the misleading
+  `.rules/srd-5.2.1.json` to `.rules/rules-index.json`. Keep legacy-path
+  read compatibility and migrate the existing file with `rules:optimize`,
+  without re-extracting PDFs or losing the search lookup.
 - Precompute a reusable BM25 lexical lookup for large, multi-book rules
   corpora. `npm run rules:optimize` upgrades an existing index without
   re-extracting PDFs; setup creates the lookup automatically. Prefer public

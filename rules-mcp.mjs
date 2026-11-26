@@ -5,10 +5,10 @@ import { performance } from "node:perf_hooks";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod/v4";
-import { listRuleSources, loadRules, readRulePage, searchRules } from "./lib/rules.mjs";
+import { RULES_INDEX_FILENAME, listRuleSources, loadRules, readRulePage, searchRules } from "./lib/rules.mjs";
 import { loadAccessPolicy, parseRulesAccessRole, visibleRulesIndex } from "./lib/rules-access.mjs";
 
-const indexPath = process.env.RULES_INDEX_PATH || join(process.cwd(), ".rules", "srd-5.2.1.json");
+const indexPath = process.env.RULES_INDEX_PATH || join(process.cwd(), ".rules", RULES_INDEX_FILENAME);
 const accessPath = process.env.RULES_ACCESS_FILE || join(process.cwd(), "rules-private", "access.json");
 const role = parseRulesAccessRole(process.env.RULES_ACCESS_ROLE);
 const PAGE_WINDOW_CHARS = 6000;

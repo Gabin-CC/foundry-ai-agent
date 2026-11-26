@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { promisify } from "node:util";
-import { SOURCE, SOURCE_SHA256, validPdfName, validateIndex } from "../lib/rules.mjs";
+import { RULES_INDEX_FILENAME, SOURCE, SOURCE_SHA256, validPdfName, validateIndex } from "../lib/rules.mjs";
 import { writeRulesSearchSidecar } from "../lib/rules-search-build.mjs";
 import { fingerprintPrivatePdf } from "../lib/private-pdf.mjs";
 
@@ -96,7 +96,7 @@ for (const entry of entries) {
 }
 
 const result = validateIndex({ version: "5.2.1", pdf_sha256: SOURCE_SHA256, private_sources, pages });
-const output = join(directory, "srd-5.2.1.json");
+const output = join(directory, RULES_INDEX_FILENAME);
 const temporary = `${output}.${process.pid}.tmp`;
 const sourceText = JSON.stringify(result);
 await writeFile(temporary, sourceText, { mode: 0o600 });

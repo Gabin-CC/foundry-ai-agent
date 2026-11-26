@@ -54,7 +54,7 @@ Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
 | --- | --- |
 | `listen.mjs` | Foundry chat polling, per-sender sessions, OpenCode bridge |
 | `opencode.json` | Model and remote Foundry MCP configuration |
-| `rules-mcp.mjs` | Local read-only SRD 5.2.1 search and page lookup |
+| `rules-mcp.mjs` | Local read-only book search and exact PDF page lookup |
 | `rules-private/` | Optional private rulebook PDFs (ignored by Git) |
 | `AGENTS.md` | Instructions for the in-game AI assistant |
 | `install.sh` | Interactive English/French installation |
@@ -209,8 +209,10 @@ Run this once after `npm ci`, from the project directory:
 npm run rules:setup
 ```
 
-This downloads the **official English SRD 5.2.1** PDF and creates a searchable
-index under `.rules/`. It does not download or use SRD 5.1 or the 2014 rules.
+This downloads the **official English SRD 5.2.1** PDF and creates the searchable
+corpus at `.rules/rules-index.json`. The filename reflects that it can also
+contain privately indexed books and adventures. It does not download or use
+SRD 5.1 or the 2014 rules.
 To build without a download, use `npm run rules:setup -- --en /path/to/SRD_CC_v5.2.1.pdf`.
 Both the PDF and the generated index are ignored by Git. Keep the `.rules/`
 directory on deploy and ensure that the service account can **read** it.
@@ -235,6 +237,11 @@ Generate only the faster lookup, without parsing or downloading a single PDF:
 ```bash
 npm run rules:optimize
 ```
+
+On installations created before this change, the same command also moves the
+legacy `.rules/srd-5.2.1.json` to `.rules/rules-index.json` **without changing
+its contents**. Until you run it, the bridge can still read the legacy name.
+The pinned official SRD PDF keeps its separate SRD-specific filename.
 
 Run it as the service account with write access to `.rules/`, then restart the
 bridge. This sidecar is ignored by Git. An absent or stale sidecar falls back
@@ -369,7 +376,7 @@ restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
 | `CHAT_LOOKBACK_MS` | `120000` | Overlap for incremental chat queries, in milliseconds |
 | `STATE_FILE` | `.state/bridge-state.json` | Local durable checkpoint file |
 | `RULES_CITATION_MODE` | `enforce` | Validate rule citations before replying; `off` disables the guard |
-| `RULES_INDEX_PATH` | `.rules/srd-5.2.1.json` | Optional custom local rules index path |
+| `RULES_INDEX_PATH` | `.rules/rules-index.json` | Optional custom local rules index path |
 | `RULES_ACCESS_FILE` | `rules-private/access.json` | Private rules-for-all / GM-only book classification |
 | `RULES_SEARCH_METRICS` | `0` | Set to `1` to log rules lookup duration, match count and output character count |
 

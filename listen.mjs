@@ -9,6 +9,7 @@ import { loadFoundrySession } from "./lib/foundry-module.mjs";
 import { parseOpencodeEvents } from "./lib/opencode-events.mjs";
 import { checkOpencodeVersion, opencodeRunCommand } from "./lib/opencode-cli.mjs";
 import { createRulesReplyGuard } from "./lib/rules-guard.mjs";
+import { RULES_INDEX_FILENAME } from "./lib/rules.mjs";
 import { accessRole, accessPolicyRevision } from "./lib/rules-access.mjs";
 
 const env = process.env;
@@ -28,7 +29,7 @@ const CHAT_FILTER_MODE = env.CHAT_FILTER_MODE || "auto";
 const CHAT_RESYNC_MS = Number(env.CHAT_RESYNC_MS || 120000);
 const CHAT_LOOKBACK_MS = Number(env.CHAT_LOOKBACK_MS || 120000);
 const RULES_CITATION_MODE = env.RULES_CITATION_MODE || "enforce";
-const RULES_INDEX_PATH = env.RULES_INDEX_PATH || join(AGENT_DIR, ".rules", "srd-5.2.1.json");
+const RULES_INDEX_PATH = env.RULES_INDEX_PATH || join(AGENT_DIR, ".rules", RULES_INDEX_FILENAME);
 const RULES_ACCESS_FILE = env.RULES_ACCESS_FILE || join(AGENT_DIR, "rules-private", "access.json");
 
 const run = promisify(execFile);

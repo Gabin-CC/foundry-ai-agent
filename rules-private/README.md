@@ -13,6 +13,8 @@ For an existing large index, `npm run rules:optimize` builds a faster private
 search lookup without re-extracting any PDF. Both the original index and the
 new `.rules/search-v1.json` remain ignored by Git. Restart the bridge after
 either command.
+This command also renames an older `.rules/srd-5.2.1.json` corpus index to
+`.rules/rules-index.json`, preserving its data and the search sidecar.
 
 ## Two categories: rules for everyone / GM content
 

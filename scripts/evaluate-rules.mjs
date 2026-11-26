@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluateRuleSuite } from "../lib/rules-eval.mjs";
-import { loadRules } from "../lib/rules.mjs";
+import { RULES_INDEX_FILENAME, loadRules } from "../lib/rules.mjs";
 
 const usage = `Usage:
   npm run eval:rules -- --prompts
@@ -12,13 +12,13 @@ const usage = `Usage:
 
 --prompts          Print JSON Lines of isolated SRD-only questions (no model calls).
 --responses FILE   Grade existing HTML replies; accepts JSON array or JSON Lines.
---index FILE       Indexed official SRD; defaults to .rules/srd-5.2.1.json.
+--index FILE       Indexed corpus; defaults to .rules/rules-index.json.
 --json             Machine-readable results (does not include reply text).
 --require-reviewed Exit non-zero unless every case is human-reviewed and evidence is complete.
 `;
 
 function parseArguments(argv) {
-  const options = { index: join(process.cwd(), ".rules", "srd-5.2.1.json") };
+  const options = { index: join(process.cwd(), ".rules", RULES_INDEX_FILENAME) };
   const argumentsWithValues = new Set(["--index", "--responses"]);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
