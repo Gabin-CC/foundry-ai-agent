@@ -17,7 +17,7 @@ async function fixture(t) {
 }
 
 function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSenders,
-  clock = () => 5000, resetMsgs = 1000, maxConcurrent = 3 }) {
+  clock = () => 5000, resetMsgs = 1000, maxConcurrent = 3, fetchMessages }) {
   return new FoundryMessageBridge({
     stateFile,
     aiId: "AI",
@@ -27,7 +27,7 @@ function buildBridge({ stateFile, messages, calls, asks, sendReply, allowedSende
     clock,
     resetMsgs,
     maxConcurrent,
-    fetchMessages: async () => messages,
+    fetchMessages: fetchMessages || (async () => messages),
     ask: asks || (async (prompt, sessionId) => {
       calls.push({ prompt, sessionId });
       return { text: "<p>ok</p>", sessionID: sessionId || "ses_one" };
@@ -255,4 +255,27 @@ test("invalid concurrency limits are rejected before connecting", async t => {
     /MAX_CONCURRENT/);
   assert.throws(() => buildBridge({ stateFile, messages: [], calls: [], maxConcurrent: 17 }),
     /MAX_CONCURRENT/);
+});
+
+test("failed replies extend the next chat query back to the failed timestamp", async t => {
+  const stateFile = await fixture(t);
+  const messages = [message("history", 10)];
+  const calls = [];
+  const fetchArguments = [];
+  let failures = 1;
+  const bridge = buildBridge({
+    stateFile, messages, calls,
+    fetchMessages: async since => { fetchArguments.push(since); return messages; },
+    sendReply: async () => {
+      if (failures--) throw new Error("Temporary failure");
+    }
+  });
+  await bridge.initialize();
+  messages.push(message("retry", 20));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  await bridge.poll();
+  await bridge.waitForIdle();
+  assert.equal(fetchArguments[2], 20);
+  assert.equal((await loadState(stateFile)).senderCursors.u1.lastTimestamp, 20);
 });

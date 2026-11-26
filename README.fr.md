@@ -22,6 +22,9 @@ constituent pas une restriction technique des permissions.
 - Traitement des demandes dans l'ordre pour chaque joueur, avec jusqu'à trois
   joueurs servis en parallèle par défaut. Les nouveaux messages continuent
   d'être détectés pendant les réponses du modèle.
+- Détection automatique de la prise en charge des filtres temporels par
+  Foundry : lectures incrémentales si le filtre fonctionne, sinon lectures
+  complètes comme auparavant.
 - Transmission du rôle Foundry du joueur dans chaque demande.
 - Accès aux fonctions Foundry via MCP (lecture, jets, interactions).
 - Installation en anglais ou en français, avec réponses de l'assistant dans
@@ -126,6 +129,9 @@ La réponse arrive en message privé.
 | `RESET_MS` | `86400000` | Délai d'inactivité avant réinitialisation |
 | `RESET_MSGS` | `1000` | Nombre maximum de messages par session |
 | `MAX_CONCURRENT` | `3` | Joueurs traités simultanément (de 1 à 16) |
+| `CHAT_FILTER_MODE` | `auto` | Test du filtrage temporel (`off` = lecture complète) |
+| `CHAT_RESYNC_MS` | `120000` | Intervalle entre deux relectures complètes (ms) |
+| `CHAT_LOOKBACK_MS` | `120000` | Chevauchement des requêtes incrémentales (ms) |
 | `STATE_FILE` | `.state/bridge-state.json` | Fichier local de reprise |
 
 Exemple pour un module MCP installé localement :
@@ -150,10 +156,18 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - La livraison est **au moins une fois**, et non exactement une fois : un
   plantage entre l'envoi d'une réponse et l'enregistrement du point de reprise
   peut entraîner une réponse ou une action MCP en double.
-- Le pont récupère toujours tout l'historique via MCP, mais filtre les
-  chuchotements avant le tri et poursuit le polling pendant les réponses.
-  Les tests utilisent des interfaces Foundry et OpenCode simulées ; le
+- Le pont vérifie d'abord le résultat d'une requête temporelle sur des
+  messages réels. Il n'active les lectures incrémentales que si les
+  identifiants correspondent. Une relecture complète est réalisée toutes
+  les deux minutes par défaut, et le mode complet est rétabli en cas d'erreur
+  ou d'incohérence. Un message omis peut donc être récupéré avec un délai
+  allant jusqu'à la prochaine relecture complète.
+- Les tests utilisent des interfaces Foundry et OpenCode simulées ; le
   fonctionnement réel doit être vérifié avant déploiement.
+
+En cas de comportement inattendu sur ta version de Foundry/MCP, renseigne
+`CHAT_FILTER_MODE=off` dans `.env` puis redémarre le pont. Cela rétablit les
+lectures complètes sans supprimer les conversations ni les points de reprise.
 
 ## Contribution et licence
 

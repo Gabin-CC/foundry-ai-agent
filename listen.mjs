@@ -4,6 +4,7 @@ import { execFile } from "node:child_process";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { FoundryMessageBridge } from "./lib/bridge.mjs";
+import { ChatHistoryReader } from "./lib/chat-reader.mjs";
 
 // Module exporting FoundrySession. A local MCP server can be configured here.
 const { FoundrySession } = await import(process.env.FOUNDRY_MCP_MODULE || "foundry-vtt-mcp-server");
@@ -21,6 +22,9 @@ const MAX_REPLY = Number(env.MAX_REPLY || 4000);
 const RESET_MS = Number(env.RESET_MS || 86400000);
 const RESET_MSGS = Number(env.RESET_MSGS || 1000);
 const MAX_CONCURRENT = Number(env.MAX_CONCURRENT || 3);
+const CHAT_FILTER_MODE = env.CHAT_FILTER_MODE || "auto";
+const CHAT_RESYNC_MS = Number(env.CHAT_RESYNC_MS || 120000);
+const CHAT_LOOKBACK_MS = Number(env.CHAT_LOOKBACK_MS || 120000);
 
 const run = promisify(execFile);
 
@@ -56,6 +60,13 @@ const usersById = {};
 for (const user of users) usersById[user._id] = { name: user.name, role: user.role };
 console.error(`[agent] connected as ${session.user?.name} (${aiId}); allowlist=[${ALLOW.join(",")}]`);
 
+const chatReader = new ChatHistoryReader({
+  read: query => session.doc("get", "ChatMessage", { query }),
+  filterMode: CHAT_FILTER_MODE,
+  resyncMs: CHAT_RESYNC_MS,
+  lookbackMs: CHAT_LOOKBACK_MS
+});
+
 const bridge = new FoundryMessageBridge({
   aiId,
   usersById,
@@ -66,7 +77,7 @@ const bridge = new FoundryMessageBridge({
   maxReply: MAX_REPLY,
   maxConcurrent: MAX_CONCURRENT,
   ask: askOpencode,
-  fetchMessages: () => session.doc("get", "ChatMessage", { query: {} }),
+  fetchMessages: failedSince => chatReader.fetch(failedSince),
   sendReply: (toId, html) => session.doc("create", "ChatMessage", {
     data: [{ author: aiId, content: String(html).trim(), speaker: { alias: "AI" }, whisper: [toId] }],
     modifiedTime: Date.now()

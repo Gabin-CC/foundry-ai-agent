@@ -24,6 +24,9 @@ whose access is appropriate for your group.
 - Processes each player's requests in order, while allowing up to three
   players to be served concurrently by default. Incoming whispers continue
   to be discovered while the model is working.
+- Automatically checks whether Foundry supports timestamp-filtered chat
+  queries, uses smaller incremental reads when verified, and falls back to
+  full reads when unsupported.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
 - Offers an English/French interactive installer; the runtime can answer in
@@ -146,6 +149,9 @@ The assistant replies in a private chat message.
 | `RESET_MS` | `86400000` | Inactivity timeout for a conversation |
 | `RESET_MSGS` | `1000` | Maximum messages before resetting a conversation |
 | `MAX_CONCURRENT` | `3` | Maximum simultaneous players (1–16) |
+| `CHAT_FILTER_MODE` | `auto` | Probe timestamp filtering (`off` forces full polling) |
+| `CHAT_RESYNC_MS` | `120000` | Full chat rescan interval, in milliseconds |
+| `CHAT_LOOKBACK_MS` | `120000` | Overlap for incremental chat queries, in milliseconds |
 | `STATE_FILE` | `.state/bridge-state.json` | Local durable checkpoint file |
 
 For a locally installed MCP server, an example module setting is:
@@ -172,10 +178,19 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Delivery is **at least once**, not exactly once: a crash after sending a
   reply but before saving its checkpoint may cause a duplicate response or
   repeated MCP action when restarting.
-- The bridge still fetches the full chat history from the MCP server, but
-  filters whispers before sorting and queues work without blocking polling.
-  Tests use mocked Foundry and OpenCode interfaces; live integration should be
-  verified before deployment.
+- The bridge first fetches the chat history and checks an actual timestamp
+  query against it. Only if the returned IDs match does it enable incremental
+  queries. It also performs a complete rescan every two minutes by default,
+  and immediately falls back to full polling when a query fails or behaves
+  unexpectedly. This prevents a permanently missed message if the MCP server
+  does not support the optimization, although recovery of a missed message
+  may be delayed until the next rescan.
+- Tests use mocked Foundry and OpenCode interfaces; live integration should
+  be verified before deployment.
+
+If your Foundry/MCP version behaves unexpectedly, set `CHAT_FILTER_MODE=off`
+in `.env` and restart the bridge. This immediately restores the previous
+full-history polling behavior without resetting conversations or checkpoints.
 
 ## Contributing
 
