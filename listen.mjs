@@ -5,9 +5,10 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { FoundryMessageBridge } from "./lib/bridge.mjs";
 import { ChatHistoryReader } from "./lib/chat-reader.mjs";
+import { loadFoundrySession } from "./lib/foundry-module.mjs";
 
-// Module exporting FoundrySession. A local MCP server can be configured here.
-const { FoundrySession } = await import(process.env.FOUNDRY_MCP_MODULE || "foundry-vtt-mcp-server");
+// Foundry client from the pinned MCP source, or a configured local module.
+const FoundrySession = await loadFoundrySession(process.env.FOUNDRY_MCP_MODULE);
 
 const env = process.env;
 const AI_USER = env.AI_USER || "AI";
