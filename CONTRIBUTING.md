@@ -23,6 +23,10 @@ available in **English and French**.
 7. Write tests for fixes and behavior changes whenever possible, especially
    message ordering, session handling, and permission-sensitive operations.
 8. Prefer small dependencies and explain any new runtime requirement.
+9. When modifying D&D rules instructions or citations, update the
+   [SRD rules evaluation](docs/RULES_EVALUATION.md) if the relevant behavior
+   changes. Keep human-reviewed outcomes separate from pattern smoke checks;
+   do not use production or private chat transcripts as test fixtures.
 
 ## Local checks
 

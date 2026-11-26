@@ -12,6 +12,7 @@
     "start": "node listen.mjs",
     "test": "node --test tests/*.test.mjs",
     "rules:setup": "node scripts/prepare-rules.mjs",
+    "eval:rules": "node scripts/evaluate-rules.mjs",
     "check:release": "node scripts/check-release.mjs",
     "smoke:foundry": "bash scripts/smoke-test.sh"
   },

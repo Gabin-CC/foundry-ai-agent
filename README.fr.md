@@ -201,6 +201,15 @@ Il ne s'agit **pas d'une preuve de bonne interprétation** : une page peut
 est volontairement prudente. Vérifie les arbitrages importants. Au besoin,
 `RULES_CITATION_MODE=off` dans `.env` désactive ce contrôle après redémarrage.
 
+Pour évaluer aussi le contenu, un **banc d'essai facultatif hors ligne de
+13 questions D&D 2024** est disponible :
+`npm run eval:rules -- --prompts`, puis
+`npm run eval:rules -- --responses /chemin/vers/reponses.jsonl`.
+Il détecte certaines confusions entre 2014 et 2024, contrôle les citations et
+les appels aux outils enregistrés, mais **une vérification humaine du sens de
+la réponse reste obligatoire**. Il ne contacte ni OpenCode ni Foundry et
+n'affecte pas la production. Voir le [guide d'évaluation (EN)](docs/RULES_EVALUATION.md).
+
 Attribution du SRD 5.2.1 (CC-BY-4.0) :
 
 > This work includes material from the System Reference Document 5.2.1 ("SRD 5.2.1") by Wizards of the Coast LLC, available at https://www.dndbeyond.com/srd. The SRD 5.2.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.
