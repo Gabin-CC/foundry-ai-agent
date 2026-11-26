@@ -6,6 +6,10 @@ Français · [English](README.md)
 compte dédié, transmet les demandes à [OpenCode](https://opencode.ai/) qui
 utilise les outils MCP de Foundry, puis répond dans le chat privé en HTML.
 
+> **Breaking change — OpenCode V2 uniquement.** OpenCode 1.x n'est plus pris
+> en charge. Les anciennes conversations V1 ne sont pas migrées ; les curseurs
+> du chat Foundry sont conservés. Voir [le passage à V2](docs/OPENCODE_V2.md).
+
 Le pont est conçu pour un **groupe de joueurs de confiance**. Par défaut,
 tous les joueurs peuvent interroger l'assistant. Les consignes réservant les
 outils MJ au MJ et aux assistants MJ reposent sur le modèle : elles ne
@@ -38,7 +42,8 @@ constituent pas une restriction technique des permissions.
 
 - Node.js **20 minimum**, npm et Git (le client Foundry est installé depuis
   un commit GitHub figé, car il n'est pas publié sur npm).
-- [OpenCode](https://opencode.ai/docs/) installé et accessible dans le `PATH`.
+- [OpenCode V2.x](https://opencode.ai/docs/) installé et accessible dans le
+  `PATH` ; un binaire V1 est refusé au démarrage.
 - Un serveur Foundry VTT avec un point d'accès MCP (par exemple,
   `foundry-vtt-mcp-server`).
 - Un compte Foundry dédié à l'agent, généralement **assistant MJ**.
@@ -55,6 +60,15 @@ git clone https://github.com/Gabin-CC/foundry-ai-agent.git
 cd foundry-ai-agent
 ./install.sh
 ```
+
+Installe d'abord OpenCode **V2**, puis vérifie le binaire (sans appel IA) :
+
+```bash
+npm run check:opencode:v2
+```
+
+Le projet ne conserve pas les sessions V1. Détails dans
+[la procédure V2](docs/OPENCODE_V2.md).
 
 L'installateur détecte la langue du système et permet de choisir entre
 **English** et **Français**. Le choix peut aussi être forcé :
@@ -124,11 +138,11 @@ existe déjà. Vérifie qu'OpenCode est disponible dans le `PATH` du service
 écrire dans `/var/lib/foundry-agent`. Adapte les chemins si nécessaire.
 **Si ton service actuel fonctionne sous root, ne remplace pas son unité avant
 d'avoir créé ce compte et adapté les droits.** La fusion du code seule ne
-modifie pas le service déjà installé. Pense aussi à sauvegarder ou migrer les
-données de session OpenCode stockées dans le répertoire personnel de root :
-sinon, les identifiants de session des joueurs peuvent devenir introuvables.
-Il n'est pas nécessaire de changer de compte pour simplement mettre le code
-à jour.
+modifie pas le service déjà installé. Aucune migration des anciennes sessions
+OpenCode V1 n'est réalisée : les conversations des joueurs recommencent en V2.
+Conserve `.state/` pour garder le point de reprise des messages Foundry et
+éviter de retraiter l'historique. Il n'est pas nécessaire de changer de compte
+pour simplement mettre le code à jour.
 
 Dans Foundry, adresse un chuchotement au compte `AI` :
 
@@ -255,7 +269,7 @@ Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
 | `AI_PASSWORD` | requis | Mot de passe du compte |
 | `ADMIN_PASSWORD` | vide | Mot de passe administrateur optionnel |
 | `ALLOWED_SENDERS` | vide | Identifiants autorisés (vide = tous) |
-| `OPENCODE_BIN` | `opencode` | Exécutable OpenCode |
+| `OPENCODE_BIN` | `opencode` | Exécutable OpenCode V2 (version majeure 2 obligatoire) |
 | `OPENCODE_MODEL` | modèle OpenRouter d'exemple | Identifiant du modèle |
 | `OPENROUTER_API_KEY` | requis avec OpenRouter | Clé API |
 | `FOUNDRY_MCP_URL` | `http://127.0.0.1:8808/mcp` | Adresse MCP |
@@ -289,6 +303,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
   mais pas la justesse de l'interprétation d'une règle.
 - L'exemple systemd utilise un compte non privilégié. `.env`, `.state/` et
   le répertoire OpenCode doivent être accessibles à ce compte.
+- Au premier démarrage V2, les références aux anciennes sessions V1 sont
+  supprimées du point de reprise ; les curseurs de lecture Foundry sont
+  conservés. Chaque joueur commence une nouvelle conversation V2.
 - Au premier lancement, les messages déjà présents sont considérés comme
   historiques. Ensuite, la reprise s'effectue à partir du dernier message
   traité **pour chaque joueur**. Les anciens fichiers d'état sont repris
@@ -298,6 +315,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - La livraison est **au moins une fois**, et non exactement une fois : un
   plantage entre l'envoi d'une réponse et l'enregistrement du point de reprise
   peut entraîner une réponse ou une action MCP en double.
+- Une erreur OpenCode ne valide pas le message : celui-ci est réessayé à la
+  prochaine interrogation, sans chuchotement d'erreur. Une erreur de fournisseur
+  persistante doit être résolue pour débloquer la file de ce joueur.
 - Le pont vérifie d'abord le résultat d'une requête temporelle sur des
   messages réels. Il n'active les lectures incrémentales que si les
   identifiants correspondent. Une relecture complète est réalisée toutes

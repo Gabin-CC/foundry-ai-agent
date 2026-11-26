@@ -251,7 +251,7 @@ test("MAX_CONCURRENT limits the number of simultaneous OpenCode calls", async t 
   assert.equal(calls.filter(call => call.sender).length, 2);
 });
 
-test("legacy global checkpoints remain valid after the per-sender upgrade", async t => {
+test("breaking V2 start discards V1 sessions but retains original Foundry checkpoint", async t => {
   const stateFile = await fixture(t);
   await writeFile(stateFile, JSON.stringify({
     version: 1,
@@ -263,13 +263,68 @@ test("legacy global checkpoints remain valid after the per-sender upgrade", asyn
   const calls = [];
   const bridge = buildBridge({ stateFile, messages, calls });
   await bridge.initialize();
+  const afterStart = await loadState(stateFile);
+  assert.deepEqual(afterStart.threads, {});
+  assert.equal(afterStart.opencodeSessionFormat, "v2");
+  assert.equal(afterStart.lastTimestamp, 100);
+  assert.deepEqual(afterStart.seenAtTimestamp, ["already-done"]);
   messages.push(message("new-for-u2", 101, "u2"));
   await bridge.poll();
   await bridge.waitForIdle();
   assert.equal(calls.filter(call => call.prompt).length, 1);
   const state = await loadState(stateFile);
-  assert.equal(state.threads.u1.id, "ses_previous");
+  assert.equal(state.threads.u1, undefined);
   assert.equal(state.senderCursors.u2.lastTimestamp, 101);
+});
+
+test("discarding V1 session IDs preserves every per-sender cursor", async t => {
+  const stateFile = await fixture(t);
+  await writeFile(stateFile, JSON.stringify({ version: 1, lastTimestamp: 10,
+    seenAtTimestamp: ["history"],
+    senderCursors: { u1: { lastTimestamp: 20, seenAtTimestamp: ["old-one"] } },
+    threads: { u1: { id: "ses_old_v1", last: 1, count: 3 } } }));
+  const messages = [message("history", 10), message("old-one", 20)];
+  const calls = [];
+  const bridge = buildBridge({ stateFile, messages, calls });
+  await bridge.initialize();
+  messages.push(message("new-one", 30));
+  await bridge.poll();
+  await bridge.waitForIdle();
+  assert.equal(calls.filter(call => call.prompt).length, 1);
+  assert.equal(calls.find(call => call.prompt).sessionId, undefined);
+  const state = await loadState(stateFile);
+  assert.equal(state.senderCursors.u1.lastTimestamp, 30);
+  assert.equal(state.threads.u1.id, "ses_one");
+  const restarted = buildBridge({ stateFile, messages, calls: [] });
+  await restarted.initialize();
+  assert.equal(restarted.state.threads.u1.id, "ses_one");
+});
+
+test("OpenCode errors and empty responses are retried without an error whisper or cursor advance", async t => {
+  const stateFile = await fixture(t);
+  const messages = [message("history", 10)];
+  const calls = [];
+  let attempts = 0;
+  const bridge = buildBridge({ stateFile, messages, calls,
+    asks: async () => {
+      attempts++;
+      if (attempts === 1) throw new Error("V2 provider unavailable");
+      if (attempts === 2) return { text: "", sessionID: "ses_new" };
+      return { text: "<p>restored</p>", sessionID: "ses_new" };
+    } });
+  await bridge.initialize();
+  messages.push(message("retry-model", 20));
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    await bridge.poll();
+    await bridge.waitForIdle();
+    assert.equal((await loadState(stateFile)).senderCursors.u1, undefined);
+    assert.equal(calls.filter(call => call.sender).length, 0);
+  }
+  await bridge.poll();
+  await bridge.waitForIdle();
+  assert.equal(calls.find(call => call.sender).html, "<p>restored</p>");
+  assert.equal((await loadState(stateFile)).senderCursors.u1.lastTimestamp, 20);
+  assert.equal(attempts, 3);
 });
 
 test("invalid concurrency limits are rejected before connecting", async t => {

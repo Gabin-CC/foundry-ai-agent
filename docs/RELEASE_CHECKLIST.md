@@ -12,18 +12,19 @@ server have different responsibilities; verify both on a real installation.
 - [ ] Verify `.env` is created with owner-only access and an existing `.env`
       is never overwritten.
 - [ ] Fill in Foundry credentials, model settings and MCP endpoint details.
+- [ ] Install OpenCode **V2.x** under the service account and run
+      `npm run check:opencode:v2`. V1 must fail the preflight.
 - [ ] Run `npm test` (all unit tests pass).
 - [ ] Run `npm run check:release` from a Git checkout (version metadata and
       tracked-file path checks pass).
 - [ ] Stop the bridge service so it does not compete for the assistant login.
       Run `npm run smoke:foundry` with Foundry running. It must connect and
       read users and chat history without posting anything.
-- [ ] Confirm that the OpenCode executable and Linux `script` utility exist.
+- [ ] Confirm that the OpenCode V2 executable and Linux `script` utility exist.
 - [ ] If running under systemd, provision the unprivileged `foundry-agent`
       user and grant it read access to `.env`, write access to `.state/`, and
-      a writable OpenCode home. Avoid switching an active root-based unit
-      without migrating its state, OpenCode configuration **and OpenCode
-      session data** (stored under the previous user's home).
+      a writable OpenCode home. Keep the `.state/` chat cursors even when
+      switching accounts; **V1 conversation sessions are not migrated**.
 
 ## Live integration
 
@@ -36,6 +37,11 @@ server have different responsibilities; verify both on a real installation.
       independent and requests from one sender remain ordered.
 - [ ] Restart the service without deleting `.env` or `.state/`; confirm new
       messages are processed and existing conversations resume.
+- [ ] For the V2-only breaking change, verify a preexisting V1 checkpoint
+      drops only old session IDs, keeps chat progress and creates **new** V2
+      conversations. A second restart should then reuse those V2 sessions.
+- [ ] Confirm OpenCode provider errors do not send an error whisper or advance
+      the chat checkpoint; a recovered request is retried.
 - [ ] Confirm timestamp-filtered polling is either verified as supported or
       automatically falls back to full polling, with no lost whispers.
 - [ ] Inspect logs for errors, accidental credential disclosure and duplicate

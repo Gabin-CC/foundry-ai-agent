@@ -7,6 +7,10 @@ An **AI assistant for Foundry VTT** that listens for private chat messages
 [OpenCode](https://opencode.ai/) and its [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
 tools, and replies privately in Foundry's HTML chat format.
 
+> **Breaking change — OpenCode V2 only.** OpenCode 1.x is unsupported. Old V1
+> conversation sessions are abandoned (no migration), while Foundry chat
+> checkpoints are preserved. See [OpenCode V2 setup](docs/OPENCODE_V2.md).
+
 The bridge is designed for a **trusted group of players and Game Masters**.
 By default, any player can whisper to the assistant. The prompt asks it to
 reserve GM tools for GMs and Assistant GMs; this is guidance, **not an
@@ -62,7 +66,8 @@ Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
 
 - Node.js **20 or later**, npm and Git (npm installs the pinned Foundry client
   source directly from GitHub; it is not published as an npm package).
-- [OpenCode](https://opencode.ai/docs/) installed and accessible from `PATH`.
+- [OpenCode V2.x](https://opencode.ai/docs/) installed and accessible from
+  `PATH`. V1.x is rejected at startup.
 - A running Foundry VTT server and a reachable Foundry MCP endpoint (for
   example, `foundry-vtt-mcp-server`).
 - A dedicated Foundry account for the assistant (typically Assistant GM).
@@ -79,6 +84,15 @@ git clone https://github.com/Gabin-CC/foundry-ai-agent.git
 cd foundry-ai-agent
 ./install.sh
 ```
+
+Install OpenCode **V2** before starting the bridge, then verify its binary:
+
+```bash
+npm run check:opencode:v2
+```
+
+The check is read-only. An OpenCode V1 executable cannot run this release.
+[V2-only setup and deployment notes](docs/OPENCODE_V2.md).
 
 The installer detects your system language and offers **English** or
 **Français** when running interactively. You can also choose explicitly:
@@ -150,10 +164,10 @@ to `/var/lib/foundry-agent`. Adapt the paths if your checkout is elsewhere.
 Existing deployments using a root-based unit should **not** replace their
 service file without first creating the user and fixing the permissions;
 merging this repository change alone does not change a running service.
-In particular, existing OpenCode sessions may be stored under root's home:
-**migrate or back up OpenCode's session data before switching `HOME`**, or
-saved per-player session IDs may become unusable. No account migration is
-required just to update the bridge code.
+Old OpenCode V1 conversations are not retained by this version, regardless of
+the previous account's `HOME`. Do not move or import V1 session data. Preserve
+`.state/` instead: it keeps Foundry chat cursors and prevents replaying old
+whispers. New conversations use OpenCode V2 under the service account.
 
 In Foundry, whisper to your dedicated assistant account:
 
@@ -286,7 +300,7 @@ restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
 | `AI_PASSWORD` | required | Account password |
 | `ADMIN_PASSWORD` | empty | Optional Foundry administrator password |
 | `ALLOWED_SENDERS` | empty | Comma-separated user IDs (empty = all players) |
-| `OPENCODE_BIN` | `opencode` | OpenCode executable |
+| `OPENCODE_BIN` | `opencode` | OpenCode V2 executable (major version 2 required) |
 | `OPENCODE_MODEL` | example OpenRouter model | Model identifier |
 | `OPENROUTER_API_KEY` | required for OpenRouter | Provider API key |
 | `FOUNDRY_MCP_URL` | `http://127.0.0.1:8808/mcp` | MCP endpoint |
@@ -320,6 +334,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
   establish semantic accuracy or detect every implicit rules question.
 - The service example uses a dedicated, unprivileged system user. Its `.env`,
   `.state/`, and OpenCode home must be accessible to that account.
+- On the first V2-only start, the bridge discards previously saved **V1**
+  OpenCode session IDs. It retains the Foundry message checkpoints, so those
+  old whispers are not replayed. Each player then starts a new V2 session.
 - On the first start, existing chat messages are treated as history. After
   that, the bridge resumes new messages from individual per-sender checkpoints.
   Existing state files from the original global-checkpoint implementation are
@@ -330,6 +347,9 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Delivery is **at least once**, not exactly once: a crash after sending a
   reply but before saving its checkpoint may cause a duplicate response or
   repeated MCP action when restarting.
+- On OpenCode errors, a player's request remains unacknowledged and is retried
+  rather than sending a misleading error whisper. Repair persistent provider
+  errors to unblock that player's queued requests.
 - The bridge first fetches the chat history and checks an actual timestamp
   query against it. Only if the returned IDs match does it enable incremental
   queries. It also performs a complete rescan every two minutes by default,

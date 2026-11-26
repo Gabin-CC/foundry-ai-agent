@@ -7,10 +7,8 @@ import { FoundryMessageBridge } from "./lib/bridge.mjs";
 import { ChatHistoryReader } from "./lib/chat-reader.mjs";
 import { loadFoundrySession } from "./lib/foundry-module.mjs";
 import { parseOpencodeEvents } from "./lib/opencode-events.mjs";
+import { checkOpencodeVersion, opencodeRunCommand } from "./lib/opencode-cli.mjs";
 import { createRulesReplyGuard } from "./lib/rules-guard.mjs";
-
-// Foundry client from the pinned MCP source, or a configured local module.
-const FoundrySession = await loadFoundrySession(process.env.FOUNDRY_MCP_MODULE);
 
 const env = process.env;
 const AI_USER = env.AI_USER || "AI";
@@ -33,15 +31,25 @@ const RULES_INDEX_PATH = env.RULES_INDEX_PATH || join(AGENT_DIR, ".rules", "srd-
 
 const run = promisify(execFile);
 
-// Keep the existing pseudo-terminal invocation for OpenCode compatibility.
+// Refuse unsupported OpenCode versions before logging in to Foundry. The
+// bridge intentionally cannot run on V1 or adopt a V1 session ID.
+const info = await checkOpencodeVersion(OPENCODE);
+console.error(`[agent] verified OpenCode ${info.version} (V2 only)`);
+
+// Foundry client from the pinned MCP source, or a configured local module.
+const FoundrySession = await loadFoundrySession(env.FOUNDRY_MCP_MODULE);
+
+// The OpenCode V2 CLI emits newline-delimited JSON inside this PTY.
 async function askOpencode(prompt, sessionId) {
-  const escapedPrompt = prompt.replace(/'/g, "'\\''");
-  const sessionArg = sessionId ? `--session ${sessionId} ` : "";
-  const command = `${OPENCODE} run --format json ${sessionArg}'${escapedPrompt}'`;
+  const command = opencodeRunCommand({ binary: OPENCODE, prompt, sessionId });
   const result = await run("script", ["-q", "-e", "-c", command, "/dev/null"],
     { cwd: AGENT_DIR, maxBuffer: 16 * 1024 * 1024, timeout: 120000 });
   const raw = String(result.stdout || "").replace(/\x1b\[[0-9;]*m/g, "");
-  return parseOpencodeEvents(raw, sessionId);
+  const parsed = parseOpencodeEvents(raw, sessionId);
+  if (!parsed.text || !parsed.sessionID) {
+    throw new Error("OpenCode V2 returned an incomplete result; retry after checking model and session state");
+  }
+  return parsed;
 }
 
 const session = await FoundrySession.login(AI_USER, AI_PASS, { adminPassword: ADMIN_PASS });
