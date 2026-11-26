@@ -1,11 +1,12 @@
-# Secrets — ne jamais versionner
+# Secrets and local state — never commit
 .env
 .or_key
 *.key
+.state/
 
-# Node
+# Node.js
 node_modules/
 npm-debug.log*
 
-# Divers
+# Miscellaneous
 .DS_Store

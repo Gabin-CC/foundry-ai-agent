@@ -19,6 +19,8 @@ whose access is appropriate for your group.
 - Sends HTML-formatted private replies.
 - Keeps separate OpenCode sessions for each sender, resetting them after
   24 hours of inactivity or 1,000 messages by default.
+- Saves a local message checkpoint and conversation session IDs so that new
+  messages can be resumed after a bridge restart.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
 - Offers an English/French interactive installer; the runtime can answer in
@@ -140,6 +142,7 @@ The assistant replies in a private chat message.
 | `MAX_REPLY` | `4000` | Maximum reply length |
 | `RESET_MS` | `86400000` | Inactivity timeout for a conversation |
 | `RESET_MSGS` | `1000` | Maximum messages before resetting a conversation |
+| `STATE_FILE` | `.state/bridge-state.json` | Local durable checkpoint file |
 
 For a locally installed MCP server, an example module setting is:
 
@@ -155,8 +158,16 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
   `AGENTS.md`; the bridge does not enforce tool-level authorization.
 - The service example should be adapted to run as a dedicated, unprivileged
   system user on production servers.
-- This early version polls the full chat history and has no persistent
-  message checkpoint or automated tests yet.
+- On the first start, existing chat messages are treated as history. After
+  that, the bridge resumes new messages from its checkpoint after restarts.
+  Keep the `.state/` directory across deployments, and ensure the service
+  account can write to it. The state contains message IDs and OpenCode session
+  IDs, but not chat content.
+- Delivery is **at least once**, not exactly once: a crash after sending a
+  reply but before saving its checkpoint may cause a duplicate response or
+  repeated MCP action when restarting.
+- The bridge still polls the full chat history. Tests use mocked Foundry and
+  OpenCode interfaces; live integration should be verified before deployment.
 
 ## Contributing
 

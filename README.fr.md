@@ -17,6 +17,8 @@ constituent pas une restriction technique des permissions.
 - Réponses privées au format HTML de Foundry.
 - Une session OpenCode par interlocuteur, réinitialisée par défaut après
   24 heures d'inactivité ou 1 000 messages.
+- Sauvegarde locale du dernier message traité et des identifiants de session
+  pour reprendre les nouveaux messages après redémarrage.
 - Transmission du rôle Foundry du joueur dans chaque demande.
 - Accès aux fonctions Foundry via MCP (lecture, jets, interactions).
 - Installation en anglais ou en français, avec réponses de l'assistant dans
@@ -120,6 +122,7 @@ La réponse arrive en message privé.
 | `MAX_REPLY` | `4000` | Taille maximale d'une réponse |
 | `RESET_MS` | `86400000` | Délai d'inactivité avant réinitialisation |
 | `RESET_MSGS` | `1000` | Nombre maximum de messages par session |
+| `STATE_FILE` | `.state/bridge-state.json` | Fichier local de reprise |
 
 Exemple pour un module MCP installé localement :
 
@@ -134,8 +137,17 @@ FOUNDRY_MCP_MODULE=/opt/foundry-vtt-mcp-server/src/foundry.mjs
 - Les consignes de rôle de `AGENTS.md` ne sont pas un contrôle des permissions
   au niveau des outils MCP.
 - Le service systemd doit être adapté à un utilisateur non privilégié.
-- Cette première version interroge l'historique du chat et ne possède pas
-  encore de reprise persistante ni de tests automatisés.
+- Au premier lancement, les messages déjà présents sont considérés comme
+  historiques. Ensuite, la reprise s'effectue à partir du dernier message
+  traité. Conserve le répertoire `.state/` entre les déploiements et assure-toi
+  que le compte du service peut y écrire. Il ne contient pas les messages,
+  seulement leurs identifiants et ceux des sessions OpenCode.
+- La livraison est **au moins une fois**, et non exactement une fois : un
+  plantage entre l'envoi d'une réponse et l'enregistrement du point de reprise
+  peut entraîner une réponse ou une action MCP en double.
+- Le pont continue d'interroger tout l'historique du chat. Les tests utilisent
+  des interfaces Foundry et OpenCode simulées ; le fonctionnement réel doit
+  être vérifié avant déploiement.
 
 ## Contribution et licence
 
