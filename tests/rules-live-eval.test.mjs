@@ -145,10 +145,14 @@ console.log(JSON.stringify({type:"text",part:{text:"<p>An Opportunity Attack use
   /Command failed/); // Output is never overwritten.
 });
 
-test("CLI dry-run does not need provider credentials or a working OpenCode binary", () => {
+test("CLI dry-run does not need provider credentials, corpus download, or an OpenCode binary", async t => {
+  const directory = await mkdtemp(join(tmpdir(), "rules-eval-dry-run-"));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const corpus = join(directory, "index.json");
+  await writeFile(corpus, JSON.stringify(index));
   const output = execFileSync(process.execPath,
     ["scripts/evaluate-rules-live.mjs", "--dry-run", "--model", model,
-      "--case", "unsourced-vecna-ritual", "--binary", "/nonexistent/opencode"],
+      "--case", "unsourced-vecna-ritual", "--binary", "/nonexistent/opencode", "--index", corpus],
     { cwd: project, encoding: "utf8", env: { PATH: process.env.PATH } });
   const result = JSON.parse(output);
   assert.equal(result.mode, "dry-run");
