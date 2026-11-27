@@ -293,6 +293,14 @@ Il ne s'agit **pas d'une preuve de bonne interprétation** : une page peut
 est volontairement prudente. Vérifie les arbitrages importants. Au besoin,
 `RULES_CITATION_MODE=off` dans `.env` désactive ce contrôle après redémarrage.
 
+> **Pourquoi `codemode: false` sur le MCP Foundry.** Avec le mode code activé,
+> le modèle a tendance à appeler `rules_search` dans un bloc `execute`
+> (`tools.foundry.rules_search(...)`). Le garde-fou ne voit que les appels
+> d'outils **directs** (`foundry_rules_search` / `foundry_rules_read_page`) :
+> une recherche cachée dans le mode code est invisible et une citation valide est
+> rejetée à tort (`unretrieved-citation`). Mettre `codemode: false` sur le
+> serveur MCP Foundry dans `opencode.json` force des appels directs vérifiables.
+
 Pour évaluer aussi le contenu, un **banc d'essai facultatif hors ligne de
 13 questions D&D 2024** est disponible :
 `npm run eval:rules -- --prompts`, puis

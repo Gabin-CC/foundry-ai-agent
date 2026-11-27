@@ -48,3 +48,11 @@ test("rules citation verification is configurable without storing private rulebo
   assert.match(envExample, /^RULES_SEARCH_METRICS=0$/m);
   assert.match(envExample, /^RULES_ACCESS_ROLE=player$/m);
 });
+
+test("Foundry MCP disables codemode so rules tool calls are visible to the citation guard", () => {
+  // When codemode is on, the model calls rules_search inside an `execute` code
+  // block, which the citation guard cannot see as a direct tool call. Explicit
+  // `codemode: false` forces direct foundry_rules_search / foundry_rules_read_page
+  // calls that the guard validates.
+  assert.strictEqual(config.mcp.servers.foundry.codemode, false);
+});
