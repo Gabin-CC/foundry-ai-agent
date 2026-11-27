@@ -315,6 +315,14 @@ wording patterns and cannot catch every implicit rules discussion. Review
 important rulings against the cited page. To temporarily restore the earlier
 prompt-only behavior, set `RULES_CITATION_MODE=off` in `.env` and restart.
 
+> **Why `codemode: false` on the Foundry MCP.** With code mode enabled, the
+> model tends to call `rules_search` inside an `execute` code block
+> (`tools.foundry.rules_search(...)`). The citation guard only sees **direct**
+> tool calls (`foundry_rules_search` / `foundry_rules_read_page`), so a lookup
+> hidden in code mode is invisible and a valid citation is wrongly rejected as
+> `unretrieved-citation`. Setting `codemode: false` on the Foundry MCP server in
+> `opencode.json` forces direct tool calls that the guard can verify.
+
 To measure rule-answer regressions separately, run the **optional offline
 13-case D&D 2024 benchmark** (`npm run eval:rules -- --prompts`, then
 `npm run eval:rules -- --responses /path/to/replies.jsonl`). It checks common
