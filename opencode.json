@@ -28,6 +28,7 @@
         "type": "remote",
         "url": "{env:FOUNDRY_MCP_URL}",
         "oauth": false,
+        "codemode": false,
         "headers": {
           "Authorization": "Basic {env:FOUNDRY_MCP_AUTH_B64}",
           "X-Rules-Audience": "{env:RULES_ACCESS_ROLE}"
