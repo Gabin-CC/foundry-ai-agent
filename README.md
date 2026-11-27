@@ -37,7 +37,7 @@ whose access is appropriate for your group.
   separate from the unit tests.
 - Includes the sender's Foundry role in each request.
 - Uses Foundry MCP tools to retrieve data, roll dice, and interact with the world.
-- Includes an optional local, read-only D&D 2024 rules MCP tool that retrieves
+- Uses the shared Foundry MCP's read-only D&D 2024 rules tools to retrieve
   English SRD 5.2.1 passages with verifiable PDF page links, plus extra locally
   supplied PDF rulebooks. The agent can explain those rules in French.
 - Offers an English/French interactive installer; the runtime can answer in
@@ -47,16 +47,15 @@ whose access is appropriate for your group.
 
 ```text
 Foundry whispers -> listen.mjs -> OpenCode -> Foundry MCP
-                                    |-----> local SRD rules MCP
-       ^                               |
-       +--------- private HTML reply --+
+       ^                                   |-- game/compendium search
+       +--------- private HTML reply ------|-- rules_search / rules_read_page
 ```
 
 | File | Purpose |
 | --- | --- |
 | `listen.mjs` | Foundry chat polling, per-sender sessions, OpenCode bridge |
 | `opencode.json` | Model and remote Foundry MCP configuration |
-| `rules-mcp.mjs` | Local read-only book search and exact PDF page lookup |
+| `rules-mcp.mjs` | Legacy standalone search used by offline/live evaluation; not configured in production OpenCode |
 | `rules-private/` | Optional private rulebook PDFs (ignored by Git) |
 | `AGENTS.md` | Instructions for the in-game AI assistant |
 | `install.sh` | Interactive English/French installation |
@@ -199,10 +198,13 @@ The assistant replies in a private chat message.
 ## Grounded D&D 2024 rules (optional setup)
 
 The example `AGENTS.md` is configured for **D&D 2024, no house rules**. It
-instructs OpenCode to search the **English SRD 5.2.1** through its local MCP
+instructs OpenCode to search the **English SRD 5.2.1** through Foundry's MCP
 server for every rules question, and to cite the actual official PDF page.
 Players can ask in French; the assistant searches English terms and explains
-the sourced rule in French. The rules server cannot change Foundry data.
+the sourced rule in French. `foundry_rules_list_sources`, `foundry_rules_search`
+and `foundry_rules_read_page` are read-only. Use `foundry_search_compendium`
+to find game items, classes and spells, and `foundry_search_text` for world
+documents; neither is a substitute for a cited rules passage.
 
 Run this once after `npm ci`, from the project directory:
 
@@ -220,12 +222,16 @@ Both the PDF and the generated index are ignored by Git. Keep the `.rules/`
 directory on deploy and ensure that the service account can **read** it.
 If you run as `foundry-agent` under systemd, create the directory as that user
 and run the setup command with that account (or arrange equivalent ownership).
-Restart OpenCode/bridge after setup if it was already running.
+Set `RULES_INDEX_PATH` and `RULES_ACCESS_FILE` for the **Foundry MCP service**
+to point at the same generated files, and grant its service account read access
+to `.rules/rules-index.json`, `.rules/search-v1.json` and the policy, using a
+read-only group or ACL. Do not copy the PDFs or index to a public directory.
+Deploy the Foundry MCP PR before this agent change, then restart MCP and bridge.
 
 ### Fast search in large libraries
 
 The **full indexed corpus** stays on disk; only retrieved excerpts enter the
-model's prompt. The rules MCP uses a precomputed lexical (BM25) lookup across
+model's prompt. The Foundry MCP uses a precomputed lexical (BM25) lookup across
 short, overlapping passages. A search returns **4 excerpts by default**
 (at most 8), around 1,300 characters each. Reading a long PDF page returns
 at most **6,000 characters**
@@ -246,10 +252,10 @@ its contents**. Until you run it, the bridge can still read the legacy name.
 The pinned official SRD PDF keeps its separate SRD-specific filename.
 
 Run it as the service account with write access to `.rules/`, then restart the
-bridge. This sidecar is ignored by Git. An absent or stale sidecar falls back
+MCP server. This sidecar is ignored by Git. An absent or stale sidecar falls back
 to building the same lookup in memory; no citations are invented. For optional
-timings and result sizes in the MCP stderr log, set `RULES_SEARCH_METRICS=1`.
-Those logs contain counts and durations, not players' search phrases.
+timings in the MCP stderr log, set `RULES_SEARCH_METRICS=1` on the MCP service.
+Those logs do not contain players' search phrases or rule passages.
 
 ### Add your own PDF rulebooks
 
@@ -261,8 +267,8 @@ their readable PDF files directly in **`rules-private/`** (e.g.
 npm run rules:setup
 ```
 
-This extends the same local index with the contents of those books. The local
-rules MCP server can list all sources, search them, and return the exact PDF
+This extends the same local index with the contents of those books. The Foundry
+rules MCP tools can list all sources, search them, and return the exact PDF
 page. Official SRD results include a clickable D&D Beyond PDF URL; private
 books are cited by **filename and PDF page** (without a fabricated web link).
 Only the instruction file in `rules-private/` is committed; PDFs and their
@@ -279,8 +285,12 @@ Indexed PDFs have just two categories: **rules for everyone** and **GM
 content** (adventures, campaign plots, hidden encounters). Put the exact
 filenames of books you want players to consult in
 `rules-private/access.json` under `rules_for_all`. **Unlisted private PDFs are
-GM-only by default**; the SRD is always public. The rules MCP filters source
-lists, search results and direct page reads using the sender's Foundry role.
+GM-only by default**; the SRD is always public. The Foundry MCP filters source
+lists, search results and direct page reads using the Foundry-authenticated role.
+Because the bridge uses a single Assistant GM account, `listen.mjs` additionally
+injects the trusted sender's `RULES_ACCESS_ROLE` into each isolated OpenCode
+run; the remote MCP reads it as an `X-Rules-Audience` header. Players cannot
+promote their own role, and the model cannot choose the header.
 Changing a classification resets that player's model context, but preserves
 their Foundry chat checkpoint. For an example and mixed-book limitations,
 see [private-book visibility](rules-private/README.md#two-categories-rules-for-everyone--gm-content).
@@ -380,6 +390,7 @@ restart. See [release checklist](docs/RELEASE_CHECKLIST.md).
 | `RULES_CITATION_MODE` | `enforce` | Validate rule citations before replying; `off` disables the guard |
 | `RULES_INDEX_PATH` | `.rules/rules-index.json` | Optional custom local rules index path |
 | `RULES_ACCESS_FILE` | `rules-private/access.json` | Private rules-for-all / GM-only book classification |
+| `RULES_ACCESS_ROLE` | `player` | Safe default for **manual** OpenCode runs; `listen.mjs` overrides this per real sender (never set it to `gm` globally) |
 | `RULES_SEARCH_METRICS` | `0` | Set to `1` to log rules lookup duration, match count and output character count |
 
 For a locally installed MCP server, an example module setting is:

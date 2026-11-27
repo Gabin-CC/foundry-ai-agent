@@ -16,14 +16,11 @@ test("Foundry MCP uses the documented remote-server layout", () => {
   assert.equal(foundry.url, "{env:FOUNDRY_MCP_URL}");
   assert.equal(foundry.oauth, false);
   assert.equal(foundry.headers.Authorization, "Basic {env:FOUNDRY_MCP_AUTH_B64}");
+  assert.equal(foundry.headers["X-Rules-Audience"], "{env:RULES_ACCESS_ROLE}");
 });
 
-test("the rules MCP server is a local, read-only source separate from Foundry", () => {
-  const rules = config.mcp.servers.rules;
-  assert.equal(rules.type, "local");
-  assert.deepEqual(rules.command, ["node", "rules-mcp.mjs"]);
-  assert.equal(rules.cwd, ".");
-  assert.equal(rules.codemode, false);
+test("all model-facing rules searches use the role-scoped Foundry MCP endpoint", () => {
+  assert.deepEqual(Object.keys(config.mcp.servers), ["foundry"]);
 });
 
 test("player agent cannot read campaign files through built-in OpenCode tools", () => {
@@ -34,7 +31,7 @@ test("player agent cannot read campaign files through built-in OpenCode tools", 
   }
   assert.ok(agent.permissions.some(p => p.action === "foundry_gm_*" && p.resource === "*" && p.effect === "deny"));
   assert.ok(agent.permissions.some(p => p.action === "opencode_read_mcp_resource" && p.resource === "foundry:*" && p.effect === "deny"));
-  assert.ok(!agent.permissions.some(p => p.action === "rules_search_rules" && p.effect === "deny"));
+  assert.ok(!agent.permissions.some(p => p.action === "foundry_rules_search" && p.effect === "deny"));
 });
 
 test("MCP credentials and model configuration reference documented environment variables", () => {
@@ -49,4 +46,5 @@ test("rules citation verification is configurable without storing private rulebo
   assert.match(envExample, /^RULES_CITATION_MODE=enforce$/m);
   assert.match(envExample, /^RULES_INDEX_PATH=$/m);
   assert.match(envExample, /^RULES_SEARCH_METRICS=0$/m);
+  assert.match(envExample, /^RULES_ACCESS_ROLE=player$/m);
 });

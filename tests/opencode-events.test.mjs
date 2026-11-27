@@ -28,6 +28,21 @@ test("a rules MCP tool returning isError is not counted as supporting evidence",
   assert.equal(parseOpencodeEvents(raw).ruleCalls[0].isError, true);
 });
 
+test("Foundry rules search and page calls are recorded, but server-side failures are rejected", () => {
+  const raw = [
+    { type: "tool_use", part: { type: "tool", tool: "foundry_rules_search",
+      state: { status: "completed", input: { query: "grapple" }, output: "Found indexed page" } } },
+    { type: "tool_use", part: { type: "tool", tool: "foundry_rules_read_page",
+      state: { status: "completed", input: { page: 8 },
+        output: "Rules source unavailable or query rejected. Check the index." } } }
+  ].map(JSON.stringify).join("\n");
+  const calls = parseOpencodeEvents(raw).ruleCalls;
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].name, "foundry_rules_search");
+  assert.equal(calls[0].isError, false);
+  assert.equal(calls[1].isError, true);
+});
+
 test("OpenCode V2 errors and incorrect resumed sessions never produce a successful result", () => {
   assert.throws(() => parseOpencodeEvents(JSON.stringify({ type: "error", sessionID: "ses_new",
     error: { name: "ProviderError" } })), /error event/);
