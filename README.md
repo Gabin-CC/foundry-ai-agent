@@ -17,6 +17,8 @@ reserve GM tools for GMs and Assistant GMs; this is guidance, **not an
 enforced permission boundary**. Deploy it only with a Foundry/MCP account
 whose access is appropriate for your group.
 
+![Example exchange with the AI agent in Foundry](assets/agent-demo.png)
+
 ## Features
 
 - Polls Foundry chat for new whispers to the assistant account.

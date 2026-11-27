@@ -15,6 +15,8 @@ tous les joueurs peuvent interroger l'assistant. Les consignes réservant les
 outils MJ au MJ et aux assistants MJ reposent sur le modèle : elles ne
 constituent pas une restriction technique des permissions.
 
+![Exemple d'échange avec l'agent IA dans Foundry](assets/agent-demo.png)
+
 ## Fonctionnalités
 
 - Récupération des chuchotements par interrogation régulière du chat.
