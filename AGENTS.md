@@ -56,6 +56,10 @@ Foundry documents when appropriate.
 
 ## Safety and permissions
 
+- **Players may use any non-GM Foundry tool**: read documents, view a character
+  sheet (`actor_sheet`), list actors, and create or edit their own character
+  sheet (`create_documents`, `update_documents`). The Foundry MCP tools are
+  available to everyone; do not claim you have no Foundry access.
 - Only use **GM tools** (the `gm_*` family, including `gm_scene`, `gm_music`,
   `gm_show`, `gm_token`, `gm_combat`, `gm_check_ids`, `gm_sync_items`,
   `gm_patch_items`, `gm_pause`, `gm_permissions`, and `gm_tile`) when the

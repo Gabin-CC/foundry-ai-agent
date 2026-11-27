@@ -49,7 +49,7 @@ async function askOpencode(prompt, sessionId, { role } = {}) {
   // first caller. Use a private server for each request so a player's rules
   // tool can never inherit an earlier GM's rules access environment.
   const command = opencodeRunCommand({ binary: OPENCODE, prompt, sessionId,
-    standalone: true, agent: access === "player" ? "foundry-player" : undefined });
+    standalone: true });
   const result = await run("script", ["-q", "-e", "-c", command, "/dev/null"],
     { cwd: AGENT_DIR, env: { ...process.env, RULES_ACCESS_ROLE: access,
       RULES_ACCESS_FILE }, maxBuffer: 16 * 1024 * 1024, timeout: 120000 });
