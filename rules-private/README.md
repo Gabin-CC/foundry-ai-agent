@@ -6,7 +6,7 @@ directly in this folder are indexed (not subdirectories). Do not add D&D 2014
 rules or house rules when your campaign uses D&D 2024 only.
 
 Then run `npm run rules:setup` from the project root and restart the bridge.
-The local `rules` MCP tools can search both the official SRD 5.2.1 and these
+The shared Foundry `rules_*` MCP tools can search both the official SRD 5.2.1 and these
 PDFs, and can report the source **filename and actual PDF page number**.
 Re-run the command after adding, replacing or removing a PDF.
 For an existing large index, `npm run rules:optimize` builds a faster private
@@ -55,8 +55,10 @@ OpenCode background service.
 
 Classification is **whole-book**, not page-level. If a book mixes player rules
 with GM spoilers, leave it GM-only until those parts can be separated into
-independently indexed PDFs. This protects the local rules MCP; it is not a
-substitute for Foundry's separate journal/document permission settings.
+independently indexed PDFs. This protects the shared rules MCP; it is not a
+substitute for Foundry's separate journal/document permission settings. Configure
+the Foundry MCP service's `RULES_INDEX_PATH` and `RULES_ACCESS_FILE` to point at
+the agent's existing files, with read-only permissions for the MCP service user.
 
 - PDFs here, their contents, and the generated `.rules/` index are **ignored
   by Git**. Do not force-add or upload commercial books to this public repo.

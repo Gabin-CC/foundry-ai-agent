@@ -43,6 +43,9 @@ test("an exact official citation is accepted only after a completed matching too
     toolCalls: [{ ...searchCall, status: "running" }], index }).ok, false);
   assert.equal(validateRulesReply({ question, reply: official,
     toolCalls: [{ ...searchCall, isError: true }], index }).ok, false);
+  assert.deepEqual(validateRulesReply({ question, reply: official,
+    toolCalls: [{ ...searchCall, name: "foundry_rules_search" }], index }),
+    { ok: true, reason: "verified-reference" });
 });
 
 test("made-up pages, mismatched anchor labels, 2014 and wrong official URLs are rejected", () => {
@@ -66,6 +69,8 @@ test("private citations require a retrieved matching filename and exact PDF page
   assert.equal(validateRulesReply({ question, reply: reply.replace("87", "88"),
     toolCalls: [privateCall], index }).ok, false);
   assert.deepEqual([...collectedEvidence(index, [privateCall])], [`${book}\u000087`]);
+  assert.deepEqual([...collectedEvidence(index, [{ ...privateCall,
+    name: "foundry_rules_read_page" }])], [`${book}\u000087`]);
   const beyondPage = { ...privateCall, input: { ...privateCall.input, offset: 99999 } };
   assert.deepEqual([...collectedEvidence(index, [beyondPage])], []);
 });

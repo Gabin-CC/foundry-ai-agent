@@ -24,18 +24,13 @@
   },
   "mcp": {
     "servers": {
-      "rules": {
-        "type": "local",
-        "command": ["node", "rules-mcp.mjs"],
-        "cwd": ".",
-        "codemode": false
-      },
       "foundry": {
         "type": "remote",
         "url": "{env:FOUNDRY_MCP_URL}",
         "oauth": false,
         "headers": {
-          "Authorization": "Basic {env:FOUNDRY_MCP_AUTH_B64}"
+          "Authorization": "Basic {env:FOUNDRY_MCP_AUTH_B64}",
+          "X-Rules-Audience": "{env:RULES_ACCESS_ROLE}"
         }
       }
     }

@@ -35,7 +35,7 @@ constituent pas une restriction technique des permissions.
   des tests unitaires.
 - Transmission du rôle Foundry du joueur dans chaque demande.
 - Accès aux fonctions Foundry via MCP (lecture, jets, interactions).
-- Recherche locale en lecture seule dans le SRD officiel 5.2.1 **anglais**,
+- Recherche via le MCP Foundry, en lecture seule, dans le SRD officiel 5.2.1 **anglais**,
   complétée si souhaité par des PDF privés, avec références aux pages exactes.
 - Installation en anglais ou en français, avec réponses de l'assistant dans
   la langue de l'interlocuteur (français par défaut).
@@ -177,10 +177,14 @@ La réponse arrive en message privé.
 
 Le fichier `AGENTS.md` est configuré pour **D&D 2024, sans règles maison**.
 Pour chaque question de règles, l'IA doit rechercher le passage pertinent
-dans le **SRD 5.2.1 anglais**, grâce à son serveur MCP local, et citer la
+dans le **SRD 5.2.1 anglais**, grâce au MCP Foundry partagé, et citer la
 **page exacte du PDF officiel**. Elle peut chercher en anglais puis expliquer
 le résultat en français. Cet outil est en lecture seule et ne modifie
-jamais les données Foundry.
+jamais les données Foundry. `foundry_rules_list_sources`, `foundry_rules_search`
+et `foundry_rules_read_page` sont les outils de documentation officielle.
+La recherche de sorts ou d'objets concrets utilise `foundry_search_compendium` ;
+celle des journaux du monde utilise `foundry_search_text`. Aucune de ces deux
+recherches ne prouve à elle seule une règle de livre.
 
 Après `npm ci`, prépare une fois le corpus depuis le dossier du projet :
 
@@ -198,7 +202,11 @@ Sans téléchargement, tu peux indiquer ton exemplaire du même PDF :
 Conserve `.rules/` pendant les déploiements ; le compte `foundry-agent`
 doit pouvoir le lire. Pour un service non-root, exécute idéalement la préparation
 avec ce compte, dans un dossier `.rules/` dont il est propriétaire.
-Si OpenCode tourne déjà, redémarre le pont après la préparation.
+Configure aussi le **service Foundry MCP** : `RULES_INDEX_PATH` doit désigner
+l'index du dépôt agent et `RULES_ACCESS_FILE` sa politique. Autorise le compte
+MCP à lire `.rules/rules-index.json`, `.rules/search-v1.json` et `access.json`
+via un groupe/ACL en lecture seule, sans les rendre publics. Déploie d'abord
+le serveur MCP compatible, puis l'agent ; redémarre ensuite les services.
 
 ### Recherche rapide dans une grande bibliothèque
 
@@ -224,10 +232,10 @@ contenu**. Le pont sait lire l'ancien nom en attendant la migration. Le PDF
 officiel du SRD conserve son propre nom, qui reste exact.
 
 Lance la commande avec le compte de service qui peut écrire dans `.rules/`,
-puis redémarre le pont. Si l'index de recherche est absent ou périmé, il est
+puis redémarre le MCP. Si l'index de recherche est absent ou périmé, il est
 reconstruit en mémoire sans inventer de sources. Pour mesurer les durées,
-le nombre de résultats et les caractères renvoyés sans journaliser les
-questions des joueurs, définis `RULES_SEARCH_METRICS=1`.
+les recherches sans journaliser les questions des joueurs, définis
+`RULES_SEARCH_METRICS=1` sur le service MCP.
 
 ### Ajouter ses propres livres PDF
 
@@ -239,7 +247,7 @@ rules-private/Players_Handbook_2024.pdf
 rules-private/Dungeon_Masters_Guide_2024.pdf
 ```
 
-Puis relance `npm run rules:setup` et redémarre le pont. L'agent pourra
+Puis relance `npm run rules:setup` et redémarre le MCP. L'agent pourra
 interroger le SRD **et** les livres présents, avec une citation « nom du PDF,
 page PDF ». Tes livres et l'index restent **exclus de Git** : seul le mode
 d'emploi du dossier est public. Les fichiers doivent contenir du texte
@@ -257,6 +265,10 @@ défaut**. Pour rendre un livre accessible aux joueurs, indique son nom de
 fichier exact dans `rules-private/access.json`, dans la liste `rules_for_all`.
 Le SRD reste toujours consultable par tous. Le MCP filtre la liste des livres,
 les recherches et la lecture directe des pages selon le rôle Foundry.
+Le pont se connecte en Assistant MJ : pour chaque message, il déduit le rôle
+du véritable expéditeur et transmet `X-Rules-Audience: player` au MCP pour un
+joueur. L'en-tête est fixé côté serveur, jamais par le modèle. En exécution
+OpenCode manuelle, le défaut `RULES_ACCESS_ROLE=player` reste restrictif.
 
 Une modification de catégorie réinitialise le contexte IA du joueur pour
 éviter de réutiliser d'anciens spoilers, mais conserve son point de reprise du
@@ -353,6 +365,7 @@ Voir la [checklist de release](docs/RELEASE_CHECKLIST.md).
 | `RULES_CITATION_MODE` | `enforce` | Vérification des citations avant réponse ; `off` pour désactiver |
 | `RULES_INDEX_PATH` | `.rules/rules-index.json` | Chemin facultatif d'un index local |
 | `RULES_ACCESS_FILE` | `rules-private/access.json` | Classement des livres : règles pour tous / contenu réservé au MJ |
+| `RULES_ACCESS_ROLE` | `player` | Défaut pour un OpenCode manuel ; le pont le fixe automatiquement par expéditeur (ne pas laisser `gm` globalement) |
 | `RULES_SEARCH_METRICS` | `0` | `1` pour journaliser la durée et la taille des recherches dans les règles |
 
 Exemple pour un module MCP installé localement :
