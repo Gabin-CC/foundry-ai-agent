@@ -214,7 +214,7 @@ test("players have separate sessions and each session resets at its message limi
 
   const requests = calls.filter(call => call.prompt);
   assert.deepEqual(requests.map(call => call.sessionId), [undefined, undefined, "ses_one", undefined]);
-  assert.match(requests.find(request => request.prompt.endsWith("\nbob1")).prompt, /role: GM \(owner\)/);
+  assert.match(requests.find(request => request.prompt.endsWith("\nbob1")).prompt, /^\[Sender: Bob\]$/m);
   const saved = await loadState(stateFile);
   assert.equal(saved.threads.u1.count, 1);
   assert.equal(saved.threads.u2.count, 1);
