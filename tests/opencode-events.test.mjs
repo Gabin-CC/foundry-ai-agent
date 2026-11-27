@@ -63,3 +63,41 @@ test("OpenCode V2 step/tool/text JSON stream keeps the resumed session ID", () =
   assert.equal(result.text, "<p>Cited answer</p>");
   assert.equal(result.ruleCalls[0].input.query, "grapple");
 });
+
+test("an interrupted assistant message does not get prefixed to the final HTML answer", () => {
+  const partial = "<p><strong>Zariel</strong></p><ul><li>Page 244, ARCHDU";
+  const final = "<p><strong>Zariel</strong></p><p>Details from the indexed PDF.</p>";
+  const raw = [
+    { type: "text", sessionID: "ses_gm", part: { type: "text", id: "prt_earlier",
+      messageID: "msg_before_tool", text: partial } },
+    { type: "tool_use", sessionID: "ses_gm", part: { type: "tool", messageID: "msg_before_tool",
+      tool: "foundry_rules_search", state: { status: "completed",
+        input: { query: "Zariel", source: "18_Descent_Avernus.pdf" }, output: "Page 244" } } },
+    { type: "text", sessionID: "ses_gm", part: { type: "text", id: "prt_final",
+      messageID: "msg_after_tool", text: final } }
+  ].map(JSON.stringify).join("\n");
+  const result = parseOpencodeEvents(raw);
+  assert.equal(result.text, final);
+  assert.equal(result.ruleCalls.length, 1, "source evidence must survive removing partial prose");
+  assert.equal(result.ruleCalls[0].name, "foundry_rules_search");
+});
+
+test("repeated updates to one text part replace its snapshot instead of duplicating it", () => {
+  const raw = [
+    { type: "text", sessionID: "ses_1", part: { type: "text", id: "prt_1", messageID: "msg_1",
+      text: "<p>First draft" } },
+    { type: "text", sessionID: "ses_1", part: { type: "text", id: "prt_1", messageID: "msg_1",
+      text: "<p>First draft is complete.</p>" } },
+    { type: "text", sessionID: "ses_1", part: { type: "text", id: "prt_1", messageID: "msg_1",
+      text: "<p>First draft is complete.</p>" } }
+  ].map(JSON.stringify).join("\n");
+  assert.equal(parseOpencodeEvents(raw).text, "<p>First draft is complete.</p>");
+});
+
+test("multiple distinct text parts from the final message remain in order", () => {
+  const raw = [
+    { type: "text", part: { type: "text", id: "prt_1", messageID: "msg_1", text: "<p>Intro.</p>" } },
+    { type: "text", part: { type: "text", id: "prt_2", messageID: "msg_1", text: "<p>Conclusion.</p>" } }
+  ].map(JSON.stringify).join("\n");
+  assert.equal(parseOpencodeEvents(raw).text, "<p>Intro.</p><p>Conclusion.</p>");
+});
